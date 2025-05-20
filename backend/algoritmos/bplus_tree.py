@@ -1,5 +1,6 @@
 import csv
-from decimal import Decimal
+import pickle
+import os
 
 class BPlusTreeNode:
     def __init__(self, is_leaf=False):
@@ -146,29 +147,39 @@ class BPlusTree:
                     print(key,item)
                 return i
         return len(keys)
+    
+    def save_to_file(self, filename):
+        with open(filename, 'wb') as f:
+            pickle.dump(self, f)
+    @staticmethod
+    def load_from_file(filename):
+        with open(filename, 'rb') as f:
+            return pickle.load(f)
+
+TREE_FILE = "bplustree_precio.dat"
 
 
-tree = BPlusTree(t=3)
-first = False
-with open("productos_amazon.csv", newline="", encoding="utf-8") as csvfile:
-    reader = csv.DictReader(csvfile)
-    for fila in reader:
-        precio = float(fila["price"].replace("$", "").strip())
-        if not first:
-            print(precio)
-            first = True
-        producto_id = fila["id"]
-        # Agregar al árbol usando precio como clave
-        tree.add(precio, producto_id)
+if os.path.exists(TREE_FILE):
+    tree = BPlusTree.load_from_file(TREE_FILE)
+    print("🌲 Árbol B+ cargado desde archivo.")
+else:
+    tree = BPlusTree(t=3)
+    with open("productos_amazon.csv", newline="", encoding="utf-8") as csvfile:
+        reader = csv.DictReader(csvfile)
+        for fila in reader:
+            precio = float(fila["price"].replace("$", "").strip())
+            producto_id = fila["id"]
+            # Agregar al árbol usando precio como clave
+            tree.add(precio, producto_id)
+    tree.save_to_file(TREE_FILE)
+    print("💾 Árbol B+ construido y guardado.")
 
 
-resultados = tree.search(100.0)
-print("Productos con precio 100.0:")
-for r in resultados:
+# Consulta
+print("\n🔍 Productos con precio 100.0:")
+for r in tree.search(100.0):
     print(r)
 
-
-resultados = tree.range_search(100.0, 100.36)
-print("Productos entre S/100 y S/100.36:")
-for r in resultados:
+print("\n📊 Productos entre S/100.0 y S/100.36:")
+for r in tree.range_search(100.0, 100.36):
     print(r)
