@@ -1,5 +1,5 @@
-from lark import Transformer
-
+from lark import Transformer,Lark
+from algoritmos.sequential import SequentialFileManager
 images_table = [
     {"id": 1, "name": "dog", "features": [0.2, 0.3]},
     {"id": 2, "name": "cat", "features": [0.9, 0.5]},
@@ -124,13 +124,18 @@ class SQLTransformer(Transformer):
         return int(s) if s.isdigit() else float(s)
 
 
+
+sequential_file = SequentialFileManager()
+#bplus_tree = BPlusTree(t=3)
+
+
 def execute_query(parsed, images_table):
     action = parsed["action"]
 
     if action == "select":
         rows = images_table
         if "where" not in parsed:
-            return rows
+            return sequential_file._read_all("productos_secuencial.bin")[0:100]
 
         cond = parsed["where"]
         col = cond["column"]
@@ -159,17 +164,13 @@ def execute_query(parsed, images_table):
         after = len(images_table)
         return f"Deleted {before - after} row(s)"
 
-"""
+
 if __name__ == "__main__":
     parser = Lark(sql_grammar, parser="lalr", start="start")
     transformer = SQLTransformer()
 
     test_queries = [
-        "SELECT * FROM images",
-        "SELECT * FROM images WHERE id = 5",
-        "SELECT * FROM images WHERE id BETWEEN 5 AND 10",
-        'INSERT INTO images VALUES (1, "dog", "vector_data")',
-        'DELETE FROM images WHERE name = "cat"',
+        "SELECT * FROM images"
     ]
 
     import pprint
@@ -184,10 +185,11 @@ if __name__ == "__main__":
             parsed = parsed.children[0]
             if hasattr(parsed, "children") and parsed.children:
                 parsed = parsed.children[0]
-
+        print(f"Parsed:\n{parsed}")
         result = execute_query(parsed, images_table)
-        pprint.pprint(result)
+        for r in result[0:10]:
+            print(r)
+            print()
 
     print("\nFinal state of images_table:")
-    pprint.pprint(images_table)
-"""
+    #pprint.pprint(images_table)
