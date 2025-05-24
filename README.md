@@ -1,7 +1,13 @@
 # PROYECTO 1 - Base de Datos II
 
-## 📚 Descripción
+## 📚 Introducción
+
+### Objetivo del proyecto
 Este proyecto implementa un motor de almacenamiento para consultas SQL básicas, incluyendo selección, inserción y eliminación, utilizando estructuras físicas avanzadas. Además, cuenta con una interfaz gráfica construida con **Flet** para facilitar la visualización e interacción con los datos.
+
+### Descripción de la aplicación
+
+### ¿Qué esperamos de la aplicación?
 
 ---
 
@@ -44,8 +50,25 @@ Se puede visualizar la implementación de la estructura en [este link](https://g
 
 ---
 
+## Resultados experimentales
+- Las métricas utilizadas serán el total de accesos a discos duros y tiempo de ejecución en milisegundos
+
+### Comparación entre índices para inserción
+
+### Comparación entre índices para búsqueda
+
+## Discusión y análisis de los resultados
+
+---
+
 ## 🖥️ Frontend (Flet)
 - Aplicación de escritorio desarrollada con **Flet**.
 - Permite:
   - Visualizar productos.
   - Buscar por categoría, nombre o precio.
+
+---
+
+## Pruebas de uso y presentación
+- Video explicativo -> en [este link](https://drive.google.com/drive/folders/1eaTNyh7sq1uyJGuJVUF00FDP35Gt_up3?usp=sharing)
+
