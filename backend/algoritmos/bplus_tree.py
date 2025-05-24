@@ -159,7 +159,7 @@ class BPlusTree:
 TREE_FILE = "bplustree_precio.dat"
 
 
-if os.path.exists(TREE_FILE):
+"""if os.path.exists(TREE_FILE):
     tree = BPlusTree.load_from_file(TREE_FILE)
     print("🌲 Árbol B+ cargado desde archivo.")
 else:
@@ -182,4 +182,4 @@ for r in tree.search(100.0):
 
 print("\n📊 Productos entre S/100.0 y S/100.36:")
 for r in tree.range_search(100.0, 100.36):
-    print(r)
+    print(r)"""

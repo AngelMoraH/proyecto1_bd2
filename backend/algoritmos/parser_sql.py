@@ -1,5 +1,8 @@
-from lark import Transformer,Lark
-from algoritmos.sequential import SequentialFileManager
+from lark import Transformer, Lark
+from sequential import SequentialFileManager
+from bplus_tree import BPlusTree
+
+
 images_table = [
     {"id": 1, "name": "dog", "features": [0.2, 0.3]},
     {"id": 2, "name": "cat", "features": [0.9, 0.5]},
@@ -44,6 +47,12 @@ sql_grammar = r"""
     %import common.WS
     %ignore WS
 """
+
+bplus_tree = BPlusTree(t=3)
+sequential_file = SequentialFileManager()
+
+for producto in sequential_file._read_all("productos_secuencial.bin"):
+    bplus_tree.add(producto.price, producto.id)
 
 
 class SQLTransformer(Transformer):
@@ -125,8 +134,7 @@ class SQLTransformer(Transformer):
 
 
 
-sequential_file = SequentialFileManager()
-#bplus_tree = BPlusTree(t=3)
+# bplus_tree = BPlusTree(t=3)
 
 
 def execute_query(parsed, images_table):
@@ -135,19 +143,30 @@ def execute_query(parsed, images_table):
     if action == "select":
         rows = images_table
         if "where" not in parsed:
-            return sequential_file._read_all("productos_secuencial.bin")[0:100]
+            return sequential_file._read_all("productos_secuencial.bin")[:100]
 
         cond = parsed["where"]
         col = cond["column"]
 
         if cond["operator"] == "=":
-            print(
-                f"[DEBUG] Filtering by: {col} == {cond['value']} ({type(cond['value'])})"
-            )
-            return [r for r in rows if str(r.get(col)) == str(cond["value"])]
+            if col == "price":
+                return bplus_tree.search(float(cond["value"]))
+            else:
+                return [
+                    r
+                    for r in sequential_file._read_all("productos_secuencial.bin")
+                    if getattr(r, col) == cond["value"]
+                ]
 
         elif cond["operator"] == "BETWEEN":
-            return [r for r in rows if cond["from"] <= r.get(col, 0) <= cond["to"]]
+            if col == "price":
+                return bplus_tree.range_search(float(cond["from"]), float(cond["to"]))
+            else:
+                return [
+                    r
+                    for r in sequential_file._read_all("productos_secuencial.bin")
+                    if cond["from"] <= getattr(r, col) <= cond["to"]
+                ]
 
     elif action == "insert":
         values = parsed["values"]
@@ -170,7 +189,7 @@ if __name__ == "__main__":
     transformer = SQLTransformer()
 
     test_queries = [
-        "SELECT * FROM images"
+        "SELECT * FROM productos WHERE price BETWEEN 100.00 AND 200.00",
     ]
 
     import pprint
@@ -192,4 +211,4 @@ if __name__ == "__main__":
             print()
 
     print("\nFinal state of images_table:")
-    #pprint.pprint(images_table)
+    # pprint.pprint(images_table)

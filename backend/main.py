@@ -21,7 +21,6 @@ def parser_sql(sql_query: SQLQuery):
     tree = parser.parse(sql_query.query)
     parsed = transformer.transform(tree)
 
-    # Desempaquetar el árbol hasta llegar al dict real
     if hasattr(parsed, "children") and parsed.children:
         parsed = parsed.children[0]
         if hasattr(parsed, "children") and parsed.children:
