@@ -18,20 +18,23 @@ Este proyecto implementa un motor de almacenamiento para consultas SQL básicas,
 ### 📌 Sequential File
 - Almacenamiento principal de los registros (`Producto`) en disco.
 - Cada registro incluye campos como `id`, `name`, `category`, `price`, `image` y `description`.
-Se puede visualizar la implementación de las estructuras en [este link](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/sequential.py)
+Se puede visualizar la implementación de la estructura en [este link](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/sequential.py)
 
 
 ### 📌 ISAM (Indexed Sequential Access Method)
 - Implementación con índice disperso (sparse index) de dos niveles.
 - Permite búsqueda eficiente sobre archivos secuenciales.
+Se puede visualizar la implementación de la estructura en [este link](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos)
 
 ### 📌 B+ Tree
 - Índice secundario ordenado por atributo `price`.
 - Soporta búsqueda exacta, por rango, inserción y eliminación.
+Se puede visualizar la implementación de la estructura en [este link](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/bplus_tree.py)
 
 ### 📌 Extendible Hashing
 - Índice dinámico basado en hashing para búsquedas por `id`.
 - Soporta expansión automática y persistencia en archivos `.dat`.
+Se puede visualizar la implementación de la estructura en [este link](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/extendible_hashing.py)
 
 ---
 
