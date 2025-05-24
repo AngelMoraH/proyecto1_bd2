@@ -6,10 +6,10 @@ Este proyecto implementa un motor de almacenamiento para consultas SQL básicas,
 ---
 
 ## 👥 Integrantes
-- Mora Huamanchay Angel Obed
-- integrante
-- integrante
-- integrante
+- Huaman Vega, Kevin Abraham
+- Mora Huamanchay, Angel Obed
+- Veramendi Hilario, Lando Fabrizio
+- Villarreal Falcón, Mishelle Stephany
 
 ---
 
