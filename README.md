@@ -18,6 +18,8 @@ Este proyecto implementa un motor de almacenamiento para consultas SQL básicas,
 ### 📌 Sequential File
 - Almacenamiento principal de los registros (`Producto`) en disco.
 - Cada registro incluye campos como `id`, `name`, `category`, `price`, `image` y `description`.
+Se puede visualizar la implementación de las estructuras en [este link](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/sequential.py)
+
 
 ### 📌 ISAM (Indexed Sequential Access Method)
 - Implementación con índice disperso (sparse index) de dos niveles.
