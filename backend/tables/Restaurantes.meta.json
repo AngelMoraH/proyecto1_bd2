@@ -1,0 +1,23 @@
+{
+  "table": "Restaurantes",
+  "columns": [
+    {
+      "name": "id",
+      "type": "INT"
+    },
+    {
+      "name": "nombre",
+      "type": "VARCHAR[20]"
+    },
+    {
+      "name": "fecha",
+      "type": "DATE"
+    },
+    {
+      "name": "precio",
+      "type": "FLOAT"
+    }
+  ],
+  "record_format": "i20s10sf",
+  "record_size": 40
+}

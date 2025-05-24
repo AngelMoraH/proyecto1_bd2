@@ -1,0 +1,35 @@
+{
+  "table": "Productos",
+  "columns": [
+    {
+      "name": "id",
+      "type": "VARCHAR[32]"
+    },
+    {
+      "name": "name",
+      "type": "VARCHAR[100]"
+    },
+    {
+      "name": "category",
+      "type": "VARCHAR[200]"
+    },
+    {
+      "name": "price",
+      "type": "FLOAT"
+    },
+    {
+      "name": "image",
+      "type": "VARCHAR[200]"
+    },
+    {
+      "name": "description",
+      "type": "VARCHAR[200]"
+    }
+  ],
+  "index": {
+    "type": "bplustree",
+    "column": "precio"
+  },
+  "record_format": "32s100s200sf200s200s",
+  "record_size": 736
+}
