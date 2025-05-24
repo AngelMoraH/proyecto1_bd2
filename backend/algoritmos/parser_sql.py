@@ -483,38 +483,9 @@ sql_grammar = r"""
 
 def execute_query(parsed, images_table):
     action = parsed["action"]
-
-    if action == "select":
-        table = parsed["table"]
-        if table in global_tables:
-            manager = global_tables[table]["manager"]
-            return manager._read_all(manager.data_file)[:100]
-        else:
-            print(f"La tabla '{table}' no está registrada.")
-
-        cond = parsed["where"]
-        col = cond["column"]
-
-        if cond["operator"] == "=":
-            if col == "price":
-                return bplus_tree.search(float(cond["value"]))
-            else:
-                return [
-                    r
-                    for r in sequential_file._read_all("productos_secuencial.bin")
-                    if getattr(r, col) == cond["value"]
-                ]
-
-        elif cond["operator"] == "BETWEEN":
-            if col == "price":
-                return bplus_tree.range_search(float(cond["from"]), float(cond["to"]))
-            else:
-                return [
-                    r
-                    for r in sequential_file._read_all("productos_secuencial.bin")
-                    if cond["from"] <= getattr(r, col) <= cond["to"]
-                ]
-
+    table = parsed["table"]
+    if action == "delete":
+        return _extracted_from_execute_query_47(parsed, images_table)
     elif action == "insert":
         values = parsed["values"]
         keys = list(images_table[0].keys()) if images_table else []
@@ -522,13 +493,53 @@ def execute_query(parsed, images_table):
         images_table.append(new_row)
         return f"Inserted: {new_row}"
 
-    elif action == "delete":
-        col = parsed["where"]["column"]
-        val = parsed["where"]["value"]
-        before = len(images_table)
-        images_table[:] = [r for r in images_table if str(r.get(col)) != str(val)]
-        after = len(images_table)
-        return f"Deleted {before - after} row(s)"
+    elif action == "select":
+        if "where" not in parsed:
+            if table in global_tables:
+                manager = global_tables[table]["manager"]
+                return manager._read_all(manager.data_file)
+            else:
+                print(f"La tabla '{table}' no está registrada.")
+
+        cond = parsed["where"]
+        col = cond["column"]
+
+        if cond["operator"] == "=":
+            if col == "price":
+                return bplus_tree.search(float(cond["value"]))
+
+            if table in global_tables:
+                manager = global_tables[table]["manager"]
+            return [
+                r
+                for r in manager._read_all(manager.data_file)
+                if str(getattr(r, col)).strip() == str(cond["value"]).strip()
+            ]
+
+        elif cond["operator"] == "BETWEEN":
+            if table in global_tables:
+                manager = global_tables[table]["manager"]
+            return (
+                bplus_tree.range_search(float(cond["from"]), float(cond["to"]))
+                if col == "price"
+                else [
+                    r
+                    for r in manager._read_all(
+                        "productos_secuencial.bin"
+                    )
+                    if cond["from"] <= getattr(r, col) <= cond["to"]
+                ]
+            )
+
+
+# TODO Rename this here and in `execute_query`
+def _extracted_from_execute_query_47(parsed, images_table):
+    col = parsed["where"]["column"]
+    val = parsed["where"]["value"]
+    before = len(images_table)
+    images_table[:] = [r for r in images_table if str(r.get(col)) != str(val)]
+    after = len(images_table)
+    return f"Deleted {before - after} row(s)"
 
 
 if __name__ == "__main__":
@@ -547,7 +558,7 @@ if __name__ == "__main__":
     )
     """,
         """CREATE TABLE Productos FROM FILE "/Users/obed/Desktop/proyecto1_bd2/backend/productos_amazon.csv" USING INDEX bplustree(precio)""",
-        "SELECT * FROM Productos",
+        "SELECT * FROM Productos","""SELECT * FROM Productos WHERE id = "4c69b61db1fc16e7013b43fc926e502d" """,
     ]
     # "SELECT * FROM productos WHERE price BETWEEN 100.00 AND 101.00",
 
@@ -559,9 +570,11 @@ if __name__ == "__main__":
         # Desempaquetar el árbol hasta llegar al dict real
         if hasattr(parsed, "children") and parsed.children:
             parsed = parsed.children[0]
-            if hasattr(parsed, "children") and parsed.children:
-                parsed = parsed.children[0]
+        if hasattr(parsed, "children") and parsed.children:
+            parsed = parsed.children[0]
 
+        print("Parsed:")
+        pprint(parsed)
         result = execute_query(parsed, images_table)
         if result is None:
             print("No se obtuvo resultado.")

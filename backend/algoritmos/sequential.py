@@ -58,7 +58,7 @@ class SequentialFileManager:
 
     def reorganize(self):
         registros = [v for v in self._read_all(self.data_file) if not v.eliminado]
-        registros += [v for v in self._read_all(self.aux_file)]
+        registros += list(self._read_all(self.aux_file))
         registros.sort(key=lambda v: v.id)
 
         with open(self.data_file, "wb") as f:
@@ -144,7 +144,7 @@ def demo_operaciones_secuencial():
     print("\n🔍 Buscar producto con ID = 18018b6bc416dab347b1b7db79994afa")
     start = time.time()
     result = manager.search("18018b6bc416dab347b1b7db79994afa")
-    print(f"Resultado: {result if result else 'No encontrada'}")
+    print(f"Resultado: {result or 'No encontrada'}")
     print(f"⏱️ Tiempo búsqueda: {time.time() - start:.6f} segundos")
 
     # Eliminación
