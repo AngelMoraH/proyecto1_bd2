@@ -36,25 +36,25 @@ La aplicación consta de dos módulos principales:
 
 * **Función**: Almacena de manera secuencial los registros de tipo `Producto` en un archivo binario.
 * **Formato de registro**: Campos fijos (`id`, `name`, `category`, `price`, `image`, `description`) serializados con métodos `to_bytes()` de la clase `Producto`.
-* **Link**: [sequential.py](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/sequential.py)
+* **Implementación**: [sequential.py](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/sequential.py)
 
 ### 🔹 ISAM (Indexed Sequential Access Method)
 
 * **Índice disperso**: Dos niveles de índices que apuntan a bloques de registros.
 * **Búsqueda**: Reduce el número de accesos al disco al localizar primero el bloque y luego el registro dentro de éste.
-* **Link**: [ISAM implementation](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos)
+* **Implementación**: [ISAM implementation](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos)
 
 ### 🔹 B+ Tree
 
 * **Índice secundario** ordenado por `price`.
 * **Operaciones soportadas**: búsqueda exacta, rango, inserción y eliminación con rebalanceo automático.
-* **Link**: [bplus\_tree.py](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/bplus_tree.py)
+* **Implementación**: [bplus\_tree.py](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/bplus_tree.py)
 
 ### 🔹 Extendible Hashing
 
 * **Hash dinámico**: Crece de forma flexible mediante directorios y buckets persistentes en `.dat`.
 * **Ventaja**: Acceso casi constante por `id`, con redistribución automática al desbordarse.
-* **Link**: [extendible\_hashing.py](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/extendible_hashing.py)
+* **Implementación**: [extendible\_hashing.py](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/extendible_hashing.py)
 
 ---
 
@@ -64,6 +64,7 @@ La aplicación consta de dos módulos principales:
 
 * Define la gramática SQL (CREATE, SELECT, INSERT, DELETE, BETWEEN, índices).
 * Genera un árbol de análisis que se traduce a llamadas al **SequentialFileManager**, **BPlusTree**, **ISAM** o **ExtendibleHashing**, según el índice y la cláusula WHERE.
+* **Implementación**: [extendible\_hashing.py](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/parser_sql.py)
 
 ---
 
@@ -96,10 +97,10 @@ La aplicación consta de dos módulos principales:
 
 ## 💡 Discusión y análisis de los resultados
 
-* **Sequential File**: sencillo pero costoso en búsquedas.
-* **ISAM**: mejora en búsquedas, penalización ligera en inserciones.
-* **B+ Tree**: balance ideal entre inserción y consulta de rango.
-* **Extendible Hashing**: sobresale en búsquedas exactas por `id`, pero no soporta rango.
+* **Sequential File**: ....
+* **ISAM**: ....
+* **B+ Tree**: ....
+* **Extendible Hashing**: ....
 
 ---
 
@@ -113,12 +114,6 @@ La aplicación consta de dos módulos principales:
 
 ---
 
-## 🎥 Pruebas de uso y presentación
+## 🎥 Presentación
 
 * **Video explicativo**: [Ver en Google Drive](https://drive.google.com/drive/folders/1eaTNyh7sq1uyJGuJVUF00FDP35Gt_up3?usp=sharing)
-* **Guía rápida**:
-
-  1. Iniciar la aplicación con `python main.py`.
-  2. Ejecutar consultas desde la interfaz.
-  3. Observar los logs de rendimiento en tiempo real.
-
