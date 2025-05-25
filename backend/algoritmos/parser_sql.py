@@ -93,21 +93,11 @@ def load_all_tables():
                 "record_format": record_format,
                 "record_size": record_size,
                 "index": meta.get("index"),
+                "table_name": table_name,
             }
 
 
 load_all_tables()
-
-print("Tablas cargadas:")
-for table_name, table_info in global_tables.items():
-    print(
-        f" - {table_name}: {table_info['record_format']} ({table_info['record_size']} bytes)"
-    )
-    print(f"   Index: {table_info['index']}")
-    print(f"   Producto Class: {table_info['producto_class'].__name__}")
-    print(f"   Manager: {table_info['manager'].__class__.__name__}")
-    print()
-    #     cargar_productos_csv("productos_amazon.csv", manager)
 
 
 def limpiar_precio(valor):
@@ -134,12 +124,31 @@ def map_type_to_format(typename):
         raise ValueError(f"Tipo no soportado: {typename}")
 
 
-bplus_tree = BPlusTree(t=3)
-"""sequential_file = SequentialFileManager()
+# bplus_tree = BPlusTree(t=3)
+if not os.path.exists(
+    "/Users/obed/Desktop/proyecto1_bd2/backend/tables/bplustree_precio.dat"
+):
+    bplus_tree = BPlusTree(t=3)
+    tables = [k for k, v in global_tables.items() if v["index"]][0]
+    print(tables)
 
-for producto in sequential_file._read_all("productos_secuencial.bin"):
-    bplus_tree.add(producto.price, producto.id)
-"""
+    sequential_file = SequentialFileManager.get_or_create(
+        tables,
+        global_tables[tables]["record_format"],
+        global_tables[tables]["record_size"],
+        global_tables[tables]["producto_class"],
+    )
+
+    for producto in sequential_file._read_all(sequential_file.data_file):
+        bplus_tree.add(producto.price, producto.id)
+
+    bplus_tree.save_to_file(
+        "/Users/obed/Desktop/proyecto1_bd2/backend/tables/bplustree_precio.dat"
+    )
+else:
+    bplus_tree = BPlusTree.load_from_file(
+        "/Users/obed/Desktop/proyecto1_bd2/backend/tables/bplustree_precio.dat"
+    )
 
 
 class SQLTransformer(Transformer):
@@ -485,21 +494,112 @@ def execute_query(parsed, images_table):
     action = parsed["action"]
     table = parsed["table"]
     if action == "delete":
+        return _handle_delete(parsed, images_table)
+    elif action == "insert":
+        return _handle_insert(parsed, table)
+    elif action == "select":
+        return _handle_select(parsed, table)
+    else:
+        raise ValueError(f"Acción desconocida: {action}")
+
+def _handle_delete(parsed, images_table):
+    col = parsed["where"]["column"]
+    val = parsed["where"]["value"]
+    before = len(images_table)
+    images_table[:] = [r for r in images_table if str(r.get(col)) != str(val)]
+    after = len(images_table)
+    return f"Deleted {before - after} row(s)"
+
+def _handle_insert(parsed, table):
+    if table not in global_tables:
+        raise ValueError(f"Tabla '{table}' no encontrada.")
+
+    manager = global_tables[table]["manager"]
+    Producto = global_tables[table]["producto_class"]
+    index_info = global_tables[table].get("index")
+
+    producto = Producto(*parsed["values"])
+    response = manager.insert(producto)
+
+    if response["status"] == 400:
+        print(f"Error al insertar el producto: {response['message']}")
+        return json.dumps(response)
+
+    if index_info and index_info["type"] == "bplustree":
+        col = index_info["column"]
+        key = getattr(producto, col)
+        bplus_tree.add(key, producto.id)
+        bplus_tree.save_to_file("tables/bplustree_precio.dat")
+
+    return f"Producto insertado en tabla '{table}'"
+
+
+def _handle_select(parsed, table):
+    if "where" not in parsed and table in global_tables:
+        manager = global_tables[table]["manager"]
+        return manager._read_all(manager.data_file)
+
+    cond = parsed["where"]
+    col = cond["column"]
+
+    if cond["operator"] == "=":
+        if col == "price":
+            return bplus_tree.search(float(cond["value"]))
+
+        if table in global_tables:
+            manager = global_tables[table]["manager"]
+        return [
+            r
+            for r in manager._read_all(manager.data_file)
+            if str(getattr(r, col)).strip() == str(cond["value"]).strip()
+        ]
+
+    elif cond["operator"] == "BETWEEN":
+        if table in global_tables:
+            manager = global_tables[table]["manager"]
+        return (
+            bplus_tree.range_search(float(cond["from"]), float(cond["to"]))
+            if col == "price"
+            else [
+                (r, col)
+                for r in manager._read_all("productos_secuencial.bin")
+                if cond["from"] <= getattr(r, col) <= cond["to"]
+            ]
+        )
+
+
+"""def execute_query(parsed, images_table):
+    action = parsed["action"]
+    table = parsed["table"]
+    if action == "delete":
         return _extracted_from_execute_query_47(parsed, images_table)
     elif action == "insert":
-        values = parsed["values"]
-        keys = list(images_table[0].keys()) if images_table else []
-        new_row = dict(zip(keys, values))
-        images_table.append(new_row)
-        return f"Inserted: {new_row}"
+        if table not in global_tables:
+            raise ValueError(f"Tabla '{table}' no encontrada.")
+
+        manager = global_tables[table]["manager"]
+        Producto = global_tables[table]["producto_class"]
+        index_info = global_tables[table].get("index")
+
+        producto = Producto(*parsed["values"])
+        response = manager.insert(producto)
+
+        if response["status"] == 400:
+            print(f"Error al insertar el producto: {response["message"]}")
+            return json.dumps(response)
+
+        if index_info and index_info["type"] == "bplustree":
+            col = index_info["column"]
+            key = getattr(producto, col)
+            bplus_tree.add(key, producto.id)
+            bplus_tree.save_to_file("tables/bplustree_precio.dat")
+
+        return f"Producto insertado en tabla '{table}'"
 
     elif action == "select":
-        if "where" not in parsed:
-            if table in global_tables:
-                manager = global_tables[table]["manager"]
-                return manager._read_all(manager.data_file)
-            else:
-                print(f"La tabla '{table}' no está registrada.")
+        if "where" not in parsed and table in global_tables:
+            manager = global_tables[table]["manager"]
+            return manager._read_all(manager.data_file)
 
         cond = parsed["where"]
         col = cond["column"]
@@ -523,23 +623,12 @@ def execute_query(parsed, images_table):
                 bplus_tree.range_search(float(cond["from"]), float(cond["to"]))
                 if col == "price"
                 else [
-                    r
-                    for r in manager._read_all(
-                        "productos_secuencial.bin"
-                    )
+                    (r, col)
+                    for r in manager._read_all("productos_secuencial.bin")
                     if cond["from"] <= getattr(r, col) <= cond["to"]
                 ]
             )
-
-
-# TODO Rename this here and in `execute_query`
-def _extracted_from_execute_query_47(parsed, images_table):
-    col = parsed["where"]["column"]
-    val = parsed["where"]["value"]
-    before = len(images_table)
-    images_table[:] = [r for r in images_table if str(r.get(col)) != str(val)]
-    after = len(images_table)
-    return f"Deleted {before - after} row(s)"
+"""
 
 
 if __name__ == "__main__":
@@ -549,18 +638,29 @@ if __name__ == "__main__":
     transformer = SQLTransformer()
 
     test_queries = [
-        """
+        "SELECT * FROM productos WHERE price BETWEEN 97.00 AND 100.00",
+        """ INSERT INTO Productos VALUES (
+        "a1234567890abcdef12345678901234",
+        "Skateboard Classic",
+        "Sports & Outdoors",
+        130.00,
+        "https://example.com/skate.jpg",
+        "High-quality classic skateboard for tricks and cruising")
+        """,
+        "SELECT * FROM productos WHERE price BETWEEN 128.00 AND 130.00",
+    ]
+    # "SELECT * FROM productos WHERE price BETWEEN 100.00 AND 101.00",
+    # """CREATE TABLE Productos FROM FILE "/Users/obed/Desktop/proyecto1_bd2/backend/productos_amazon.csv" USING INDEX bplustree(precio)""",
+    """
     CREATE TABLE Restaurantes (
         id INT,
         nombre VARCHAR[20],
         fecha DATE,
         precio FLOAT
     )
-    """,
-        """CREATE TABLE Productos FROM FILE "/Users/obed/Desktop/proyecto1_bd2/backend/productos_amazon.csv" USING INDEX bplustree(precio)""",
-        "SELECT * FROM Productos","""SELECT * FROM Productos WHERE id = "4c69b61db1fc16e7013b43fc926e502d" """,
-    ]
-    # "SELECT * FROM productos WHERE price BETWEEN 100.00 AND 101.00",
+    """
+    """ "SELECT * FROM Productos" """
+    """SELECT * FROM Productos WHERE id = "4c69b61db1fc16e7013b43fc926e502d" """
 
     for query in test_queries:
         print(f"\nQuery:\n{query.strip()}")
@@ -576,9 +676,13 @@ if __name__ == "__main__":
         print("Parsed:")
         pprint(parsed)
         result = execute_query(parsed, images_table)
+        print("\nResultado:")
         if result is None:
             print("No se obtuvo resultado.")
-        else:
+        if isinstance(result, list):
             for r in result:
                 print(r)
                 print()
+        elif isinstance(result, str):
+            print(result)
+

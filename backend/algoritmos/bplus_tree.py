@@ -30,7 +30,7 @@ class BPlusTree:
         while node:
             for k, record in node.children:
                 if start_key <= k <= end_key:
-                    result.append(record)
+                    result.append((record, k))
                 elif k > end_key:
                     return result
             node = node.next

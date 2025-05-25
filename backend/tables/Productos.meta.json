@@ -28,7 +28,7 @@
   ],
   "index": {
     "type": "bplustree",
-    "column": "precio"
+    "column": "price"
   },
   "record_format": "32s100s200sf200s200s",
   "record_size": 736

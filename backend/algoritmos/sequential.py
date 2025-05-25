@@ -34,7 +34,7 @@ class SequentialFileManager:
         data_file = os.path.join("tables", f"{table_name}.bin")
         aux_file = os.path.join("tables", f"{table_name}_aux.bin")
 
-        instance = cls(record_size,record_format, data_file, aux_file, ProductoClass)
+        instance = cls(record_size, record_format, data_file, aux_file, ProductoClass)
         cls._instances[table_name] = instance
         return instance
 
@@ -42,19 +42,19 @@ class SequentialFileManager:
         with open(filename, "rb") as f:
             return [
                 self.ProductoClass.from_bytes(f.read(self.record_size))
-                
                 for _ in range(os.path.getsize(filename) // self.record_size)
             ]
 
     def insert(self, producto):
         if self.search(producto.id):
             print(f"[WARN] Ya existe un registro con ID {producto.id}")
-            return
+            return {"message": f"Ya existe un registro con ID {producto.id}", "status": 400}
         with open(self.aux_file, "ab") as aux:
             aux.write(producto.to_bytes())
 
         if os.path.getsize(self.aux_file) // self.record_size >= K:
             self.reorganize()
+        return {"message": "Registro insertado", "status": 200}
 
     def reorganize(self):
         registros = [v for v in self._read_all(self.data_file) if not v.eliminado]
