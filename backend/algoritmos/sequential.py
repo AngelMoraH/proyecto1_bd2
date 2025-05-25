@@ -76,7 +76,7 @@ class SequentialFileManager:
         self.data_file = data_file
         self.aux_file = aux_file
         os.makedirs(os.path.dirname(self.data_file), exist_ok=True)
-        
+
         for file in [self.data_file, self.aux_file]:
             if not os.path.exists(file):
                 open(file, "wb").close()
@@ -88,17 +88,35 @@ class SequentialFileManager:
 
         data_file = os.path.join("tables", f"{table_name}.bin")
         aux_file = os.path.join("tables", f"{table_name}_aux.bin")
+        for file in [data_file, aux_file]:
+            if not os.path.exists(file):
+                open(file, "wb").close()
 
         instance = cls(record_size, record_format, data_file, aux_file, ProductoClass)
         cls._instances[table_name] = instance
         return instance
 
-    def _read_all(self, filename):
-        with open(filename, "rb") as f:
-            return [
-                p for _ in range(os.path.getsize(filename) // self.record_size)
-                if not (p := self.ProductoClass.from_bytes(f.read(self.record_size))).eliminado
-            ]
+    def _read_all(self, filename, aux_filename=None):
+
+        productos = []
+        files_to_read = []
+        if filename:
+            files_to_read.append(filename)
+        if aux_filename:
+            files_to_read.append(aux_filename)
+
+        for file in files_to_read:
+            if not os.path.exists(file):
+                continue
+            with open(file, "rb") as f:
+                while True:
+                    chunk = f.read(self.record_size)
+                    if len(chunk) < self.record_size:
+                        break
+                    producto = self.ProductoClass.from_bytes(chunk)
+                    if not producto.eliminado:
+                        productos.append(producto)
+        return productos
 
     def insert(self, producto):
         if self.search(producto.id):

@@ -23,8 +23,8 @@ class BPlusTree:
 
     def range_search(self, start_key, end_key):
         
-        print("start_key",start_key)
-        print("end_key",end_key)
+        print("start_key",start_key, type(start_key))
+        print("end_key",end_key, type(end_key))
         
         node = self.root
         while not node.is_leaf:
@@ -33,8 +33,10 @@ class BPlusTree:
         result = []
         while node:
             for k, record in node.children:
+                print("k",k, type(k))
+                print("record",record)
                 if start_key <= k <= end_key:
-                    result.append((record, k))
+                    result.append(record)
                 elif k > end_key:
                     return result
             node = node.next
@@ -147,8 +149,6 @@ class BPlusTree:
     def _find_index(self, keys, key):
         for i, item in enumerate(keys):
             if key < item:
-                if item == 237.68 and key ==237.68:
-                    print(key,item)
                 return i
         return len(keys)
     

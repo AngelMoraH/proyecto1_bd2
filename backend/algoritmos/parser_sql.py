@@ -4,6 +4,7 @@ import json
 import os
 import csv
 import pathlib
+import time
 
 from algoritmos.table_manager import (
     limpiar_precio,
@@ -12,13 +13,15 @@ from algoritmos.table_manager import (
     tables_dir,
     load_all_tables,
 )
-from algoritmos.bplustree_manager import bplus_tree
+from algoritmos.bplus_tree import BPlusTree
 from algoritmos.sequential import SequentialFileManager, build_producto_class
 from algoritmos.query_handlers import _handle_delete, _handle_insert, _handle_select
 
 
-
 load_all_tables()
+
+bplus_tree = BPlusTree(t=3)
+
 
 class SQLTransformer(Transformer):
     def create_stmt(self, items):
@@ -82,17 +85,7 @@ class SQLTransformer(Transformer):
 
             open(table_bin, "wb").close()
 
-            # 4. Crear clase Producto dinámica
-
             Producto = build_producto_class(fields, record_format)
-
-            """manager = SequentialFileManager(
-                record_format=record_format,
-                record_size=record_size,
-                data_file=os.path.join("tables", f"{table_name}.bin"),
-                aux_file=os.path.join("tables", f"{table_name}_aux.bin"),
-                ProductoClass=Producto,
-            )"""
 
             manager = SequentialFileManager.get_or_create(
                 table_name, record_format, record_size, Producto
@@ -115,14 +108,18 @@ class SQLTransformer(Transformer):
                 "producto_class": Producto,
                 "record_format": record_format,
                 "record_size": record_size,
+                "bplus_tree": None,
             }
+            aux_file = os.path.join(tables_dir, f"{table_name}_aux.bin")
+            print(aux_file)
+            for producto in manager._read_all(table_bin, aux_file):
+                bplus_tree.add(getattr(producto, index_info["column"]), producto.id)
 
-            for producto in manager._read_all(table_bin):
-                bplus_tree.add(producto.price, producto.id)
-
-            bplus_tree.save_to_file(
-                "/Users/obed/Desktop/proyecto1_bd2/backend/tables/bplustree_precio.dat"
+            index_filename = (
+                f"tables/index_bplustree_{table_name}_{index_info["column"]}.dat"
             )
+            bplus_tree.save_to_file(index_filename)
+            global_tables[table_name]["bplus_tree"] = bplus_tree
 
             return {
                 "action": "create_from_file",
@@ -131,6 +128,7 @@ class SQLTransformer(Transformer):
                 "index": index_info,
                 "record_format": record_format,
                 "record_size": record_size,
+                "bplus_tree": None,
             }
 
         else:
@@ -257,7 +255,6 @@ class SQLTransformer(Transformer):
         return int(s) if s.isdigit() else float(s)
 
 
-
 sql_grammar = pathlib.Path(
     os.path.join(os.path.dirname(__file__), "sql_grammar.lark")
 ).read_text()
@@ -266,14 +263,28 @@ sql_grammar = pathlib.Path(
 def execute_query(parsed):
     action = parsed["action"]
     table = parsed["table"]
+    if table not in global_tables:
+        return {
+            "status": 400,
+            "message": f"Tabla '{table}' no encontrada.",
+        }
+    print(f"Ejecutando acción: {action} en la tabla: {table}")
     if action == "delete":
         return _handle_delete(parsed, table)
     elif action == "insert":
         return _handle_insert(parsed, table)
     elif action == "select":
         return _handle_select(parsed, table)
-    elif action == "create":
+    elif action in ["create", "create_from_file"]:
         return {
             "status": 200,
             "message": f"Tabla '{table}' creada con éxito.",
         }
+
+
+def timed_execute_query(parsed):
+    start_time = time.time()
+    result = execute_query(parsed)
+    end_time = time.time()
+    elapsed = end_time - start_time
+    return {"result": result, "execution_time_seconds": round(elapsed, 6)}

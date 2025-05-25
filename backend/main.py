@@ -1,6 +1,6 @@
 from typing import Union
 from lark import Lark
-from algoritmos.parser_sql import SQLTransformer,execute_query,sql_grammar
+from algoritmos.parser_sql import SQLTransformer,timed_execute_query,sql_grammar
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -26,9 +26,4 @@ def parser_sql(sql_query: SQLQuery):
     if hasattr(parsed, "children") and parsed.children:
         parsed = parsed.children[0]
 
-    result = execute_query(parsed)
-    return {"result": result}
-
-@app.get("/items/{item_id}")
-def read_item(item_id: int, q: Union[str, None] = None):
-    return {"item_id": item_id, "q": q}
+    return timed_execute_query(parsed)
