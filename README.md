@@ -66,7 +66,7 @@ La aplicación consta de dos módulos principales:
 
 * Define la gramática SQL (CREATE, SELECT, INSERT, DELETE, BETWEEN, índices).
 * Genera un árbol de análisis que se traduce a llamadas al **SequentialFileManager**, **BPlusTree**, **ISAM** o **ExtendibleHashing**, según el índice y la cláusula WHERE.
-* **Implementación**: [extendible\_hashing.py](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/parser_sql.py)
+* **Implementación**: [parser\_sql.py](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/parser_sql.py)
 
 ---
 
