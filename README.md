@@ -4,14 +4,16 @@
 
 ### 🎯 Objetivo del proyecto
 
-Este proyecto desarrolla un motor de almacenamiento capaz de procesar consultas SQL básicas (SELECT, INSERT, DELETE) sobre archivos en disco, aprovechando estructuras de datos avanzadas para optimizar tiempos de respuesta y accesos físicos. Además, incluye una interfaz gráfica en **Flet** que facilita la interacción con los datos y visualiza el comportamiento de cada índice.
+- Comprender y aplicar técnicas de indexación para optimizar la gestión, el almacenamiento y la recuperación de datos estructurados dentro de un modelo relacional basado en tablas, integrando también el soporte para datos complejos y multidimensionales.
 
 ### 📝 Descripción de la aplicación
+
+- Este proyecto desarrolla un motor de almacenamiento capaz de procesar consultas SQL básicas (SELECT, INSERT, DELETE) sobre archivos en disco, aprovechando estructuras de datos avanzadas para optimizar tiempos de respuesta y accesos físicos. Además, incluye una interfaz gráfica en **Flet** que facilita la interacción con los datos y visualiza el comportamiento de cada índice.
 
 La aplicación consta de dos módulos principales:
 
 1. **Backend**: Implementa las estructuras de almacenamiento (Sequential File, ISAM, B+ Tree, Extendible Hashing) y un parser SQL basado en Lark, que enruta cada consulta a la estructura adecuada.
-2. **Frontend (Flet)**: Proporciona una interfaz de escritorio donde el usuario puede listar, buscar y filtrar productos por atributos como categoría, nombre o rango de precio.
+2. **Frontend**: Proporciona una interfaz de escritorio donde el usuario puede listar, buscar y filtrar productos por atributos como categoría, nombre o rango de precio. También se puede ver los tiempos de ejecucción de cada quey.
 
 ### 🤔 ¿Qué esperamos de la aplicación?
 
@@ -101,16 +103,6 @@ La aplicación consta de dos módulos principales:
 * **ISAM**: ....
 * **B+ Tree**: ....
 * **Extendible Hashing**: ....
-
----
-
-## 🖥️ Frontend (Flet)
-
-### 🔎 Funcionalidades
-
-* Listado de productos con paginación.
-* Búsqueda por categoría, nombre y rango de precio.
-* Visualización de métricas en pantalla (tiempos, accesos).
 
 ---
 
