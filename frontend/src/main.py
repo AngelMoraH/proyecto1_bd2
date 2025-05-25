@@ -89,12 +89,15 @@ class SQLQueryApp:
 
                 query_lower = query.lower()
                 response = requests.post(
-                    "http://localhost:8000/sql_parser", json={"query": query.upper()}
+                    "http://localhost:8000/sql_parser", json={"query": query}
                 )
                 if response.status_code != 200:
                     raise Exception("Error al consultar la API")
 
                 results = response.json()["result"]
+                execution_time_ms = response.json()["execution_time_seconds"]
+                print(results)
+                
                 if not results:
                     raise Exception("La consulta no devolvió resultados")
 
@@ -102,7 +105,6 @@ class SQLQueryApp:
 
                 # Calcular tiempo de ejecución
                 end_time = time.time()
-                execution_time_ms = (end_time - start_time) * 1000
                 self.execution_time.value = (
                     f"Tiempo de ejecución: {execution_time_ms:.2f} ms"
                 )

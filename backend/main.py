@@ -11,7 +11,7 @@ class SQLQuery(BaseModel):
 
 @app.get("/")
 def read_root():
-    return {"Hello": "World"}
+    return {"proyecto": "Proyecto 1 BD2"}
 
 @app.post("/sql_parser")
 def parser_sql(sql_query: SQLQuery):
