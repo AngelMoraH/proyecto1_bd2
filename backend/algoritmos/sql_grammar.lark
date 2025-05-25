@@ -1,0 +1,42 @@
+start: statement
+
+statement: create_stmt
+         | select_stmt
+         | insert_stmt
+         | delete_stmt
+
+create_stmt: "CREATE" "TABLE" NAME "(" column_def ("," column_def)* ")"
+            | "CREATE" "TABLE" NAME "FROM" "FILE" ESCAPED_STRING "USING" "INDEX" index_stmt
+
+column_def: NAME type ["INDEX" NAME]
+
+index_stmt: "bplustree" "(" NAME ")"      -> index_bplustree
+            | "isam" "(" NAME ")"           -> index_isam
+
+select_stmt: "SELECT" "*" "FROM" NAME                        -> select_all
+           | "SELECT" "*" "FROM" NAME "WHERE" NAME "=" value -> select_eq
+           | "SELECT" "*" "FROM" NAME "WHERE" NAME "BETWEEN" value "AND" value -> select_between
+
+insert_stmt: "INSERT" "INTO" NAME "VALUES" "(" value ("," value)* ")"
+delete_stmt: "DELETE" "FROM" NAME "WHERE" NAME "=" value
+
+type: base_type
+    | "ARRAY" "[" base_type "]"
+
+base_type: INT | TEXT | FLOAT | DATE | varchar_type
+value: ESCAPED_STRING | SIGNED_NUMBER | NAME
+
+INT: "INT"
+TEXT: "TEXT"
+FLOAT: "FLOAT"
+DATE: "DATE"
+AND: "AND"
+varchar_type: "VARCHAR" "[" INT_VALUE "]"
+INT_VALUE: /[0-9]+/
+
+NAME: /[a-zA-Z_][a-zA-Z0-9_]*/
+
+%import common.ESCAPED_STRING
+%import common.SIGNED_NUMBER
+%import common.WS
+%ignore WS

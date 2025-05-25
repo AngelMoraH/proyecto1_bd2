@@ -1,6 +1,6 @@
 from typing import Union
 from lark import Lark
-from algoritmos.parser_sql import SQLTransformer,execute_query,sql_grammar,images_table
+from algoritmos.parser_sql import SQLTransformer,execute_query,sql_grammar
 from fastapi import FastAPI
 from pydantic import BaseModel
 
@@ -23,10 +23,10 @@ def parser_sql(sql_query: SQLQuery):
 
     if hasattr(parsed, "children") and parsed.children:
         parsed = parsed.children[0]
-        if hasattr(parsed, "children") and parsed.children:
-            parsed = parsed.children[0]
+    if hasattr(parsed, "children") and parsed.children:
+        parsed = parsed.children[0]
 
-    result = execute_query(parsed, images_table)
+    result = execute_query(parsed)
     return {"result": result}
 
 @app.get("/items/{item_id}")

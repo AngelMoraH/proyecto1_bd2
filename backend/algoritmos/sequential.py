@@ -1,7 +1,5 @@
 import struct
 import os
-import csv
-from typing import List
 import time
 
 
@@ -13,6 +11,61 @@ CSV_FILE = "/Users/obed/Desktop/proyecto1_bd2/backend/productos_amazon.csv"
 K = 5
 
 
+def build_producto_class(fields, record_format):
+    class Producto:
+        def __init__(self, *args):
+            for field, value in zip(fields, args):
+                name = field["name"]
+                setattr(self, name, value)
+            self.eliminado = False
+
+        def to_bytes(self):
+            valores = []
+            for field in fields:
+                val = getattr(self, field["name"])
+                fmt = field["type"]
+                if fmt.startswith("VARCHAR"):
+                    size = int(fmt[8:-1])
+                    val = val.encode("utf-8")[:size].ljust(size, b" ")
+                    valores.append(val)
+                elif fmt == "FLOAT":
+                    valores.append(float(val))
+                elif fmt == "INT":
+                    valores.append(int(val))
+                elif fmt == "DATE":
+                    val = str(val)[:10].encode("utf-8").ljust(10, b" ")
+                    valores.append(val)
+            valores.append(self.eliminado)
+            return struct.pack(record_format, *valores)
+
+        @staticmethod
+        def from_bytes(data):
+            unpacked = struct.unpack(record_format, data)
+            parsed = []
+            for val, field in zip(unpacked[:-1], fields):
+                tipo = field["type"]
+                if tipo.startswith("VARCHAR") or tipo == "DATE":
+                    parsed.append(val.decode("utf-8", errors="replace").strip())
+                elif tipo == "FLOAT":
+                    parsed.append(float(val))
+                elif tipo == "INT":
+                    parsed.append(int(val))
+            eliminado = unpacked[-1]
+            obj = Producto(*parsed)
+            obj.eliminado = eliminado
+            return obj
+
+        def __str__(self):
+            values = [f"{f['name']}={getattr(self, f['name'])}" for f in fields]
+            return (
+                f"[{'X' if self.eliminado else ' '}] Producto("
+                + ", ".join(values)
+                + ")"
+            )
+
+    return Producto
+
+
 class SequentialFileManager:
     _instances = {}  # almacena una instancia por nombre de tabla
 
@@ -22,6 +75,8 @@ class SequentialFileManager:
         self.ProductoClass = ProductoClass
         self.data_file = data_file
         self.aux_file = aux_file
+        os.makedirs(os.path.dirname(self.data_file), exist_ok=True)
+        
         for file in [self.data_file, self.aux_file]:
             if not os.path.exists(file):
                 open(file, "wb").close()
@@ -41,14 +96,16 @@ class SequentialFileManager:
     def _read_all(self, filename):
         with open(filename, "rb") as f:
             return [
-                self.ProductoClass.from_bytes(f.read(self.record_size))
-                for _ in range(os.path.getsize(filename) // self.record_size)
+                p for _ in range(os.path.getsize(filename) // self.record_size)
+                if not (p := self.ProductoClass.from_bytes(f.read(self.record_size))).eliminado
             ]
 
     def insert(self, producto):
         if self.search(producto.id):
-            print(f"[WARN] Ya existe un registro con ID {producto.id}")
-            return {"message": f"Ya existe un registro con ID {producto.id}", "status": 400}
+            return {
+                "message": f"Ya existe un registro con ID {producto.id}",
+                "status": 400,
+            }
         with open(self.aux_file, "ab") as aux:
             aux.write(producto.to_bytes())
 

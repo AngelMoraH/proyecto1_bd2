@@ -22,6 +22,10 @@ class BPlusTree:
         return [record for k, record in node.children if k == key]
 
     def range_search(self, start_key, end_key):
+        
+        print("start_key",start_key)
+        print("end_key",end_key)
+        
         node = self.root
         while not node.is_leaf:
             i = self._find_index(node.keys, start_key)
