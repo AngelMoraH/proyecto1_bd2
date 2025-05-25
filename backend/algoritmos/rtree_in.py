@@ -119,6 +119,39 @@ class RTreeIndex:
         matching_ids = self.key_index.get(key, [])
         return [self.data_store[id_] for id_ in matching_ids if id_ in self.data_store]
     
+    def remove(self, key) -> int:
+        matching_ids = self.key_index.get(key, [])
+        
+        if not matching_ids:
+            print(f"⚠️  No se encontraron registros con clave: {key}")
+            return 0
+        
+        removed_count = 0
+        failed_deletions = []
+        
+        for record_id in matching_ids:
+            if record_id in self.data_store:
+                try:
+                    registro = self.data_store[record_id]   
+                    coords = self._extract_coordinates(registro)
+                    bbox = coords + coords            
+                    self.spatial_index.delete(record_id, bbox)            
+                    del self.data_store[record_id]    
+                    removed_count += 1
+                    
+                except Exception as e:
+                    failed_deletions.append((record_id, str(e)))
+                    print(f"⚠️  Error eliminando record_id {record_id}: {e}")
+        
+        if key in self.key_index:
+            del self.key_index[key]
+        if removed_count > 0:
+            self.save_to_file()
+            print(f"✅ Eliminados {removed_count} registros con clave: {key}")
+            if failed_deletions:
+                print(f"⚠️  {len(failed_deletions)} eliminaciones fallaron")
+        return removed_count
+
     def add_batch(self, registros: List[Any]) -> List[int]:
         ids = []
         print(f"📥 Agregando {len(registros)} registros...")
@@ -292,4 +325,6 @@ if __name__ == "__main__":
     for city, distance in nearest:
         print(f"  📍 {city.name}, {city.country} - {distance:.0f}km")
 
-    
+    removed = cities_index.remove("Madrid_Spain")
+    kilo = cities_index.search("Tokyo_Japan")
+    print(kilo)
