@@ -1,0 +1,40 @@
+{
+  "table": "ciudades",
+  "columns": [
+    {
+      "name": "Country",
+      "type": "VARCHAR[30]"
+    },
+    {
+      "name": "City",
+      "type": "VARCHAR[30]"
+    },
+    {
+      "name": "AccentCity",
+      "type": "VARCHAR[30]"
+    },
+    {
+      "name": "Region",
+      "type": "VARCHAR[30]"
+    },
+    {
+      "name": "Population",
+      "type": "VARCHAR[30]"
+    },
+    {
+      "name": "Latitude",
+      "type": "VARCHAR[30]"
+    },
+    {
+      "name": "Longitude",
+      "type": "VARCHAR[30]"
+    }
+  ],
+  "index": {
+    "type": "rtree",
+    "x_column": "Latitude",
+    "y_column": "Longitude"
+  },
+  "record_format": "30s30s30s30s30s30s30s?",
+  "record_size": 211
+}

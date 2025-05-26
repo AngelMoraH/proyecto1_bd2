@@ -7,7 +7,7 @@ import time
 # RECORD SIZE = struct.calcsize(RECORD FORMAT)
 # DATA FILE = "productos_secuencial.bin"
 # AUX FILE = "auxiliar.bin"
-CSV_FILE = "/Users/obed/Desktop/proyecto1_bd2/backend/productos_amazon.csv"
+CSV_FILE =  "/Users/lvera/OneDrive/Escritorio/proyecto_bd/proyecto1_bd2-main (1)/proyecto1_bd2-main/backend/productos_amazon.csv"
 K = 5
 
 

@@ -3,85 +3,287 @@ from algoritmos.table_manager import global_tables
 
 
 def _handle_delete(parsed, table):
+    """Maneja operaciones DELETE para ambos tipos de tabla (sequential y rtree)"""
     if table not in global_tables:
         return {"status": 400, "message": f"Tabla '{table}' no encontrada."}
+    
+    table_info = global_tables[table]
+    manager = table_info["manager"]
+    table_type = table_info["index"]["type"]
+    
     col = parsed["where"]["column"]
     val = parsed["where"]["value"]
-    manager = global_tables[table]["manager"]
-    bplus_tree = global_tables[table].get("bplus_tree")
-    index_info = global_tables[table].get("index")
-    if col != "id":
+    
+    # Para tablas sequential, verificar que sea por id
+    if table_type != "rtree" and col != "id":
         return {
             "status": 400,
-            "message": f"El índice solo se puede eliminar por id, no por {col}",
+            "message": f"Las tablas sequential solo se pueden eliminar por id, no por {col}",
         }
-    producto = manager.search(val)
-    if not producto:
+    
+    if table_type == "rtree":
+        if col == "id":
+            return {
+                "status": 400,
+                "message": f"Para tablas rtree, use la clave compuesta (name_country) en lugar de id",
+            }
+        elif col == "key":
+            # Usar la clave directamente
+            key = val
+        else:
+            return {
+                "status": 400,
+                "message": f"Para tablas rtree, elimine por 'key' (name_country)",
+            }
+    else:
+        key = val
+    
+    # Buscar el registro
+    record = manager.search(key)
+    if not record:
+        entity_name = "Ciudad" if table_type == "rtree" else "Producto"
         return {
             "status": 404,
-            "message": f"Producto con id = {val} no encontrado en '{table}'",
+            "message": f"{entity_name} con clave = {key} no encontrado en '{table}'",
         }
-    eliminado = manager.delete(val)
+    
+    # Eliminar el registro
+    eliminado = manager.delete(key)
     if not eliminado:
         return {
             "status": 400,
-            "message": f"No se pudo eliminar el producto con id = {val}",
+            "message": f"No se pudo eliminar el registro con clave = {key}",
         }
-    if index_info and index_info["type"] == "bplustree":
-        col_index = index_info["column"]
-        key = getattr(producto, col_index)
-        bplus_tree.remove(key)
-        bplus_tree.save_to_file("tables/bplustree_precio.dat")
-    return {"status": 200, "message": f"Producto con id = {val} eliminado de '{table}'"}
+    
+    # Actualizar B+ tree si existe (solo para tablas sequential)
+    if table_type != "rtree":
+        bplus_tree = table_info.get("bplus_tree")
+        index_info = table_info.get("index")
+        
+        if index_info and index_info["type"] == "bplustree" and bplus_tree:
+            col_index = index_info["column"]
+            index_key = getattr(record, col_index)
+            bplus_tree.remove(index_key)
+            # Usar el nombre de la tabla en el archivo del índice
+            index_filename = f"tables/index_bplustree_{table}_{col_index}.dat"
+            bplus_tree.save_to_file(index_filename)
+    
+    entity_name = "Ciudad" if table_type == "rtree" else "Producto"
+    return {
+        "status": 200, 
+        "message": f"{entity_name} con clave = {key} eliminado de '{table}'"
+    }
 
 
 def _handle_insert(parsed, table):
+    """Maneja operaciones INSERT para ambos tipos de tabla"""
     if table not in global_tables:
         return {"status": 400, "message": f"Tabla '{table}' no encontrada."}
-    manager = global_tables[table]["manager"]
-    bplus_tree = global_tables[table].get("bplus_tree")
-    Producto = global_tables[table]["producto_class"]
-    index_info = global_tables[table].get("index")
-    producto = Producto(*parsed["values"])
-    response = manager.insert(producto)
-    if response["status"] == 400:
-        return json.dumps(response)
-    if index_info and index_info["type"] == "bplustree":
-        col = index_info["column"]
-        key = getattr(producto, col)
-        bplus_tree.add(key, producto.id)
-        bplus_tree.save_to_file("tables/bplustree_precio.dat")
+    
+    table_info = global_tables[table]
+    manager = table_info["manager"]
+    RecordClass = table_info["class"]  # Usar "class" en lugar de "producto_class"
+    table_type = table_info["index"]["type"]
+    
+    # Crear el objeto registro
+    record = RecordClass(*parsed["values"])
+    
+    # Insertar el registro
+    response = manager.insert(record)
+    if response["status"] != 200:
+        return response
+    
+    # Actualizar B+ tree si existe (solo para tablas sequential)
+    if table_type != "rtree":
+        bplus_tree = table_info.get("bplus_tree")
+        index_info = table_info.get("index")
+        
+        if index_info and index_info["type"] == "bplustree" and bplus_tree:
+            col = index_info["column"]
+            index_key = getattr(record, col)
+            record_id = getattr(record, "id") if hasattr(record, "id") else record.key
+            bplus_tree.add(index_key, record_id)
+            # Usar el nombre de la tabla en el archivo del índice
+            index_filename = f"tables/index_bplustree_{table}_{col}.dat"
+            bplus_tree.save_to_file(index_filename)
+    
+    entity_name = "Ciudad" if table_type == "rtree" else "Producto"
+    record_key = record.key if hasattr(record, "key") else getattr(record, "id", "N/A")
+    
     return {
         "status": 200,
-        "message": f"Producto con id = {producto.id} insertado en '{table}'",
+        "message": f"{entity_name} con clave = {record_key} insertado en '{table}'",
     }
 
 
 def _handle_select(parsed, table):
-    if "where" not in parsed and table in global_tables:
-        manager = global_tables[table]["manager"]
-        return manager._read_all(manager.data_file, manager.aux_file)
+    if table not in global_tables:
+        return {"status": 400, "message": f"Tabla '{table}' no encontrada."}
+    
+    table_info = global_tables[table]
+    manager = table_info["manager"]
+    table_type = table_info["index"]["type"]
+    
+    # Si no hay WHERE clause, devolver todos los registros
+    if "where" not in parsed:
+        if table_type != "rtree":
+            return manager._read_all(manager.data_file, manager.aux_file)
+        else:  # rtree
+            # Para rtree, necesitamos leer todos los registros no eliminados
+            records = []
+            if hasattr(manager, 'data_file'):
+                import os
+                if os.path.exists(manager.data_file):
+                    with open(manager.data_file, "rb") as f:
+                        record_id = 0
+                        while True:
+                            chunk = f.read(manager.record_size)
+                            if len(chunk) < manager.record_size:
+                                break
+                            
+                            record = manager.CityClass.from_bytes(chunk)
+                            if not record.eliminado:
+                                records.append(record)
+                            record_id += 1
+            return records
+    
+    # Procesar WHERE clause
     cond = parsed["where"]
     col = cond["column"]
-    bplus_tree = global_tables[table].get("bplus_tree")
+    
+    # Para búsquedas espaciales en rtree
+    if table_type == "rtree" and col in ["spatial_range", "knn"]:
+        if col == "spatial_range":
+            # Esperamos: WHERE spatial_range = {"point": [lon, lat], "radius": km}
+            params = cond["value"]
+            if isinstance(params, str):
+                params = json.loads(params)
+            return manager.spatial_range_search(params["point"], params["radius"])
+        elif col == "knn":
+            # Esperamos: WHERE knn = {"point": [lon, lat], "k": number}
+            params = cond["value"]
+            if isinstance(params, str):
+                params = json.loads(params)
+            return manager.knn_search(params["point"], params["k"])
+    
+    # Búsquedas por igualdad
     if cond["operator"] == "=":
-        if col == "price":
-            return bplus_tree.search(float(cond["value"]))
-        if table in global_tables:
-            manager = global_tables[table]["manager"]
+        # Usar B+ tree si está disponible y es la columna indexada
+        bplus_tree = table_info.get("bplus_tree")
+        index_info = table_info.get("index")
+        
+        if (table_type != "rtree" and 
+            bplus_tree and 
+            index_info and 
+            index_info["column"] == col):
+            
+            search_value = float(cond["value"]) if col == "price" else cond["value"]
+            return bplus_tree.search(search_value)
+        
+        # Búsqueda directa por clave
+        if col in ["id", "key"]:
+            result = manager.search(cond["value"])
+            return [result] if result else []
+        
+        # Búsqueda lineal para otros campos
+        if table_type != "rtree":
+            all_records = manager._read_all(manager.data_file, manager.aux_file)
+        else:  # rtree - obtener todos los registros
+            all_records = _get_all_rtree_records(manager)
+        
         return [
-            r
-            for r in manager._read_all(manager.data_file, manager.aux_file)
-            if str(getattr(r, col)).strip() == str(cond["value"]).strip()
+            r for r in all_records
+            if str(getattr(r, col, "")).strip() == str(cond["value"]).strip()
         ]
+    
+    # Búsquedas por rango (BETWEEN)
     elif cond["operator"] == "BETWEEN":
-        if table in global_tables:
-            manager = global_tables[table]["manager"]
-        if col != "price":
-            return [
-                r
-                for r in manager._read_all(manager.data_file, manager.aux_file)
-                if cond["from"] <= getattr(r, col) <= cond["to"]
-            ]
-        ids = bplus_tree.range_search(float(cond["from"]), float(cond["to"]))
-        return [producto for id in ids if (producto := manager.search(id)) is not None]
+        # Usar B+ tree si está disponible
+        bplus_tree = table_info.get("bplus_tree")
+        index_info = table_info.get("index")
+        
+        if (table_type != "rtree" and 
+            bplus_tree and 
+            index_info and 
+            index_info["column"] == col):
+            
+            from_val = float(cond["from"]) if col == "price" else cond["from"]
+            to_val = float(cond["to"]) if col == "price" else cond["to"]
+            
+            ids = bplus_tree.range_search(from_val, to_val)
+            return [record for id in ids if (record := manager.search(id)) is not None]
+        
+        # Búsqueda lineal para BETWEEN sin índice
+        if table_type != "rtree":
+            all_records = manager._read_all(manager.data_file, manager.aux_file)
+        else:  # rtree
+            all_records = _get_all_rtree_records(manager)
+        
+        return [
+            r for r in all_records
+            if cond["from"] <= getattr(r, col, 0) <= cond["to"]
+        ]
+    
+    return {"status": 400, "message": f"Operador '{cond['operator']}' no soportado"}
+
+
+def _get_all_rtree_records(manager):
+    """Función auxiliar para obtener todos los registros de una tabla rtree"""
+    records = []
+    if hasattr(manager, 'data_file'):
+        import os
+        if os.path.exists(manager.data_file):
+            with open(manager.data_file, "rb") as f:
+                while True:
+                    chunk = f.read(manager.record_size)
+                    if len(chunk) < manager.record_size:
+                        break
+                    
+                    record = manager.CityClass.from_bytes(chunk)
+                    if not record.eliminado:
+                        records.append(record)
+    return records
+
+
+def _handle_spatial_query(table, query_type, params):
+    if table not in global_tables:
+        return {"status": 400, "message": f"Tabla '{table}' no encontrada."}
+    
+    table_info = global_tables[table]
+    
+    if table_info["index"] != "rtree":
+        return {
+            "status": 400, 
+            "message": f"Las consultas espaciales solo están disponibles para tablas rtree"
+        }
+    
+    manager = table_info["manager"]
+    
+    try:
+        if query_type == "spatial_range":
+            point = params["point"]  # [longitude, latitude]
+            radius = params["radius"]  # en kilómetros
+            return {
+                "status": 200,
+                "data": manager.spatial_range_search(point, radius)
+            }
+        
+        elif query_type == "knn":
+            point = params["point"]  # [longitude, latitude]
+            k = params["k"]  # número de vecinos
+            return {
+                "status": 200,
+                "data": manager.knn_search(point, k)
+            }
+        
+        else:
+            return {
+                "status": 400,
+                "message": f"Tipo de consulta espacial '{query_type}' no soportado"
+            }
+    
+    except Exception as e:
+        return {
+            "status": 500,
+            "message": f"Error en consulta espacial: {str(e)}"
+        }

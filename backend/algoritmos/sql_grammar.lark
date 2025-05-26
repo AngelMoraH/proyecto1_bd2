@@ -12,10 +12,18 @@ column_def: NAME type ["INDEX" NAME]
 
 index_stmt: "bplustree" "(" NAME ")"      -> index_bplustree
             | "isam" "(" NAME ")"           -> index_isam
+            | "rtree" "(" NAME "," NAME ")" -> index_rtree
 
 select_stmt: "SELECT" "*" "FROM" NAME                        -> select_all
            | "SELECT" "*" "FROM" NAME "WHERE" NAME "=" value -> select_eq
            | "SELECT" "*" "FROM" NAME "WHERE" NAME "BETWEEN" value "AND" value -> select_between
+           | "SELECT" "*" "FROM" NAME "WHERE" spatial_condition -> select_spatial
+
+spatial_condition: "DISTANCE" "(" point "," point ")" "<=" SIGNED_NUMBER -> distance_condition
+                 | "KNN" "(" point "," SIGNED_NUMBER ")"                    -> knn_condition
+                 | "RANGE" "(" point "," SIGNED_NUMBER ")"                  -> range_condition
+
+point: "(" SIGNED_NUMBER "," SIGNED_NUMBER ")"
 
 insert_stmt: "INSERT" "INTO" NAME "VALUES" "(" value ("," value)* ")"
 delete_stmt: "DELETE" "FROM" NAME "WHERE" NAME "=" value

@@ -15,13 +15,12 @@ from algoritmos.table_manager import (
 )
 from algoritmos.bplus_tree import BPlusTree
 from algoritmos.sequential import SequentialFileManager, build_producto_class
-from algoritmos.query_handlers import _handle_delete, _handle_insert, _handle_select
-
+from algoritmos.query_handlers import _handle_delete, _handle_insert, _handle_select, _handle_spatial_query
+from algoritmos.rtree_in import RTreeIndex, build_city_class
 
 load_all_tables()
 
 bplus_tree = BPlusTree(t=3)
-
 
 class SQLTransformer(Transformer):
     def create_stmt(self, items):
@@ -30,22 +29,26 @@ class SQLTransformer(Transformer):
             table_name = str(items[0])
             file_path = items[1]  # eliminar comillas
             index_info = items[2]
-
+            
             with open(file_path, newline="", encoding="utf-8") as f:
                 reader = csv.DictReader(f)
                 rows = list(reader)
                 if not rows:
                     raise ValueError("CSV vacío.")
-
+            
                 sample = rows[0]
                 fields = []
                 record_format = ""
-
+#Latitude,Longitude
                 for key, value in sample.items():
                     if key.lower() == "id":
                         tipo = "VARCHAR[32]"
                     elif key.lower() == "price":
                         tipo = "FLOAT"
+                    elif key.lower() == "Latitude":
+                        tipo = "FLOAT"
+                    elif key.lower() == "Longitude":
+                        tipo = "FLOAT"    
                     elif key.lower() == "date" or "fecha" in key.lower():
                         tipo = "DATE"
                     elif len(value) > 100:
@@ -92,44 +95,75 @@ class SQLTransformer(Transformer):
             )
 
             # 5. Insertar al archivo binario
-            for fila in rows:
-                producto = Producto(
-                    fila.get("id", ""),
-                    fila.get("name", "")[:50],
-                    fila.get("category", "")[:30],
-                    limpiar_precio(fila.get("price", "")),
-                    fila.get("image", "")[:100],
-                    fila.get("description", "")[:200],
+            if index_info and index_info.get("type") == "rtree":
+                City = build_city_class(fields, record_format)
+                City.__fields__ = fields
+                
+                manager = RTreeIndex.get_or_create(table_name, record_format, 
+                                                record_size, City)
+                
+                # Insertar datos usando el CSV loader que ya tienes implementado
+                from algoritmos.rtree_in import load_cities_from_csv
+                num_loaded = load_cities_from_csv(file_path, manager)
+                
+                # Actualizar global_tables con la estructura correcta
+                global_tables[table_name] = {
+                    "manager": manager,
+                    "class": City,  # Usar "class" en lugar de "city_class"
+                    "record_format": record_format,
+                    "record_size": record_size,
+                    "index": index_info,
+                    "table_name": table_name,
+                }
+
+                return {
+                    "action": "create_from_file",
+                    "table": table_name,
+                    "file": file_path,
+                    "index": index_info,
+                    "record_format": record_format,
+                    "record_size": record_size,
+                    "records_loaded": num_loaded,
+                }
+            else:
+                for fila in rows:
+                    producto = Producto(
+                        fila.get("id", ""),
+                        fila.get("name", "")[:50],
+                        fila.get("category", "")[:30],
+                        limpiar_precio(fila.get("price", "")),
+                        fila.get("image", "")[:100],
+                        fila.get("description", "")[:200],
+                    )
+                    manager.insert(producto)
+
+                global_tables[table_name] = {
+                    "manager": manager,
+                    "producto_class": Producto,
+                    "record_format": record_format,
+                    "record_size": record_size,
+                    "bplus_tree": None,
+                }
+                aux_file = os.path.join(tables_dir, f"{table_name}_aux.bin")
+                print(aux_file)
+                for producto in manager._read_all(table_bin, aux_file):
+                    bplus_tree.add(getattr(producto, index_info["column"]), producto.id)
+
+                index_filename = (
+                    f"tables/index_bplustree_{table_name}_{index_info["column"]}.dat"
                 )
-                manager.insert(producto)
+                bplus_tree.save_to_file(index_filename)
+                global_tables[table_name]["bplus_tree"] = bplus_tree
 
-            global_tables[table_name] = {
-                "manager": manager,
-                "producto_class": Producto,
-                "record_format": record_format,
-                "record_size": record_size,
-                "bplus_tree": None,
-            }
-            aux_file = os.path.join(tables_dir, f"{table_name}_aux.bin")
-            print(aux_file)
-            for producto in manager._read_all(table_bin, aux_file):
-                bplus_tree.add(getattr(producto, index_info["column"]), producto.id)
-
-            index_filename = (
-                f"tables/index_bplustree_{table_name}_{index_info["column"]}.dat"
-            )
-            bplus_tree.save_to_file(index_filename)
-            global_tables[table_name]["bplus_tree"] = bplus_tree
-
-            return {
-                "action": "create_from_file",
-                "table": table_name,
-                "file": file_path,
-                "index": index_info,
-                "record_format": record_format,
-                "record_size": record_size,
-                "bplus_tree": None,
-            }
+                return {
+                    "action": "create_from_file",
+                    "table": table_name,
+                    "file": file_path,
+                    "index": index_info,
+                    "record_format": record_format,
+                    "record_size": record_size,
+                    "bplus_tree": None,
+                }
 
         else:
             table_name = str(items[0])
@@ -195,6 +229,56 @@ class SQLTransformer(Transformer):
                 "to": items[3],
             },
         }
+    def select_spatial(self, items):
+        table_name = str(items[0])
+        spatial_condition = items[1]  # Esto viene del método spatial_condition
+        return {
+            "action": "select",
+            "table": table_name,
+            "where": spatial_condition
+        }
+
+    def distance_condition(self, items):
+        point1 = items[0]  # [x, y]
+        point2 = items[1]  # [x, y] 
+        max_distance = items[2]
+        return {
+            "column": "spatial_range",
+            "operator": "<=",
+            "value": {
+                "point": point2,  # punto de referencia
+                "radius": max_distance
+            }
+        }
+
+    def knn_condition(self, items):
+        point = items[0]  # [x, y]
+        k = int(items[1])  # número de vecinos
+        return {
+            "column": "knn",
+            "operator": "=",
+            "value": {
+                "point": point,
+                "k": k
+            }
+        }
+
+    def range_condition(self, items):
+        point = items[0]  # [x, y]
+        radius = items[1]
+        return {
+            "column": "spatial_range", 
+            "operator": "<=",
+            "value": {
+                "point": point,
+                "radius": radius
+            }
+        }
+
+    def point(self, items):
+        x = float(items[0])
+        y = float(items[1])
+        return [x, y]
 
     def insert_stmt(self, items):
         table = str(items[0])
@@ -213,7 +297,14 @@ class SQLTransformer(Transformer):
         if isinstance(col, str) and col.startswith('"') and col.endswith('"'):
             col = col[1:-1]
         return {"type": "bplustree", "column": str(col)}
-
+    def index_rtree(self, items):
+        x_col = str(items[0])
+        y_col = str(items[1])
+        if x_col.startswith('"') and x_col.endswith('"'):
+            x_col = x_col[1:-1]
+        if y_col.startswith('"') and y_col.endswith('"'):
+            y_col = y_col[1:-1]
+        return {"type": "rtree", "x_column": x_col, "y_column": y_col}
     def index_isam(self, items):
         return {"type": "isam", "column": str(items[0])}
 
@@ -262,6 +353,7 @@ sql_grammar = pathlib.Path(
 
 def execute_query(parsed):
     action = parsed["action"]
+    print(action)
     table = parsed["table"]
     if table not in global_tables:
         return {
@@ -275,6 +367,8 @@ def execute_query(parsed):
         return _handle_insert(parsed, table)
     elif action == "select":
         return _handle_select(parsed, table)
+    elif action == "select_spatial":
+        return _handle_spatial_query(parsed, table)
     elif action in ["create", "create_from_file"]:
         return {
             "status": 200,

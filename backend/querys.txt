@@ -23,8 +23,9 @@
     """ "SELECT * FROM Productos" """
     """SELECT * FROM Productos WHERE id = "4c69b61db1fc16e7013b43fc926e502d" """
 
-
-
+"""CREATE TABLE ciudades FROM FILE "/Users/lvera/OneDrive/Escritorio/proyecto_bd/proyecto1_bd2-main (1)/proyecto1_bd2-main/backend/worldcities.csv"
+USING INDEX rtree(Latitude, Longitude)"""
+""" SELECT * FROM ciudades"""
 
 
 
