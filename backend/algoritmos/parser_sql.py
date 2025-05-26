@@ -102,14 +102,13 @@ class SQLTransformer(Transformer):
                 manager = RTreeIndex.get_or_create(table_name, record_format, 
                                                 record_size, City)
                 
-                # Insertar datos usando el CSV loader que ya tienes implementado
                 from algoritmos.rtree_in import load_cities_from_csv
                 num_loaded = load_cities_from_csv(file_path, manager)
                 
                 # Actualizar global_tables con la estructura correcta
                 global_tables[table_name] = {
                     "manager": manager,
-                    "class": City,  # Usar "class" en lugar de "city_class"
+                    "class": City,  
                     "record_format": record_format,
                     "record_size": record_size,
                     "index": index_info,
@@ -366,6 +365,7 @@ def execute_query(parsed):
     elif action == "insert":
         return _handle_insert(parsed, table)
     elif action == "select":
+        print("select")
         return _handle_select(parsed, table)
     elif action == "select_spatial":
         return _handle_spatial_query(parsed, table)

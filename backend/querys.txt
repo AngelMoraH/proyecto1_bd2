@@ -23,11 +23,12 @@
     """ "SELECT * FROM Productos" """
     """SELECT * FROM Productos WHERE id = "4c69b61db1fc16e7013b43fc926e502d" """
 
-"""CREATE TABLE ciudades FROM FILE "/Users/lvera/OneDrive/Escritorio/proyecto_bd/proyecto1_bd2-main (1)/proyecto1_bd2-main/backend/worldcities.csv"
+"""CREATE TABLE ciudades FROM FILE "/Users/lvera/OneDrive/Escritorio/proyecto_bd/proyecto1_bd2-main (1)/proyecto1_bd2-main/backend/worldcities_copy.csv"
 USING INDEX rtree(Latitude, Longitude)"""
 """ SELECT * FROM ciudades"""
 
-
+SELECT * FROM ciudades WHERE KNN ( ( 1 , 2 ) , 5 )
+SELECT * FROM ciudades WHERE RANGE (( 31.62 , 62.879511) ,   10000)
 
 
 if __name__ == "__main__":

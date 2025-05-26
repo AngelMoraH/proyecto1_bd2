@@ -437,37 +437,56 @@ class RTreeIndex:
         return ids
 
     def spatial_range_search(self, point: List[float], radio_km: float) -> List[Tuple[Any, float]]:
-        if not self._validate_coordinates(point):
-            return []
-            
-        radio_deg = radio_km / 111.0
+
+
+        
+        lat_rad = math.radians(point[1])  # point[1] es latitud
+        
+        km_per_degree_lat = 111.32
+        km_per_degree_lng = 111.32 * math.cos(lat_rad)
+        
+        delta_lat = radio_km / km_per_degree_lat
+        delta_lng = radio_km / km_per_degree_lng if km_per_degree_lng > 0 else radio_km / 111.32
         
         bbox = [
-            point[0] - radio_deg,  # min_x
-            point[1] - radio_deg,  # min_y
-            point[0] + radio_deg,  # max_x
-            point[1] + radio_deg   # max_y
+            point[0] - delta_lng, 
+            point[1] - delta_lat, 
+            point[0] + delta_lng,  
+            point[1] + delta_lat   
         ]
         
         try:
             candidate_ids = list(self.spatial_index.intersection(bbox))
+            print(f"🎯 Encontrados {len(candidate_ids)} candidatos en bounding box")
             
-            result = []
+            if not candidate_ids:
+                print("📍 No se encontraron candidatos en el área de búsqueda")
+                return []
+            
+            results = []
+            valid_candidates = 0
+            
             for record_id in candidate_ids:
                 city = self._read_record_by_position(record_id)
                 if city and not city.eliminado:
                     coords = self._extract_coordinates(city)
                     if self._validate_coordinates(coords):
+                        valid_candidates += 1
+                        # Calcular distancia real usando Haversine
                         distance_km = self._haversine_distance(point, coords)
                         
+                        # Verificar si está realmente dentro del radio
                         if distance_km <= radio_km:
-                            result.append((city, distance_km))
-            
-            result.sort(key=lambda x: x[1])
-            return result
-            
+                            results.append((city, distance_km))
+                    else:
+                        print(f"⚠️ Ciudad con coordenadas inválidas encontrada: {city.name if hasattr(city, 'name') else 'Unknown'}")
+
+            results.sort(key=lambda x: x[1])
+            return results
         except Exception as e:
             print(f"❌ Error en búsqueda espacial: {e}")
+            import traceback
+            traceback.print_exc()
             return []
 
     def knn_search(self, point: List[float], k: int) -> List[Tuple[Any, float]]:
@@ -482,7 +501,6 @@ class RTreeIndex:
                     chunk = f.read(self.record_size)
                     if len(chunk) < self.record_size:
                         break
-                    
                     try:
                         city = self.CityClass.from_bytes(chunk)
                         if not city.eliminado:
@@ -491,7 +509,7 @@ class RTreeIndex:
                                 distance = self._haversine_distance(point, coords)
                                 distances.append((city, distance))
                     except Exception as e:
-                        print(f"⚠️ Error procesando registro {record_id} en KNN: {e}")
+                        print(f" Error procesando registro {record_id} en KNN: {e}")
                     
                     record_id += 1
             
@@ -499,24 +517,33 @@ class RTreeIndex:
             return distances[:k]
             
         except Exception as e:
-            print(f"❌ Error en búsqueda KNN: {e}")
+            print(f"Error en búsqueda KNN: {e}")
             return []
 
     def _haversine_distance(self, point1, point2):
         try:
-            lon1, lat1 = point1[0], point1[1]
-            lon2, lat2 = point2[0], point2[1]
-            
+            lon1, lat1 = float(point1[0]), float(point1[1])
+            lon2, lat2 = float(point2[0]), float(point2[1])        
+            if not (-180 <= lon1 <= 180 and -90 <= lat1 <= 90 and 
+                    -180 <= lon2 <= 180 and -90 <= lat2 <= 90):
+                return float('inf')
             lat1, lon1, lat2, lon2 = map(math.radians, [lat1, lon1, lat2, lon2])
             
             dlat = lat2 - lat1
             dlon = lon2 - lon1
-            a = math.sin(dlat/2)**2 + math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2
+            
+            a = (math.sin(dlat/2)**2 + 
+                math.cos(lat1) * math.cos(lat2) * math.sin(dlon/2)**2)
             c = 2 * math.asin(math.sqrt(a))
-            r = 6371  # radio tierra en km
-            return c * r
+            R = 6371.0
+            distance = R * c
+            return distance
+        except (ValueError, TypeError, IndexError) as e:
+            print(f"⚠️ Error calculando distancia Haversine: {e}")
+            print(f"   Point1: {point1}, Point2: {point2}")
+            return float('inf')
         except Exception as e:
-            print(f"⚠️ Error calculando distancia: {e}")
+            print(f"❌ Error inesperado en Haversine: {e}")
             return float('inf')
 
     def size(self) -> int:

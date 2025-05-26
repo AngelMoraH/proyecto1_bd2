@@ -140,31 +140,32 @@ def _handle_select(parsed, table):
                             chunk = f.read(manager.record_size)
                             if len(chunk) < manager.record_size:
                                 break
-                            
                             record = manager.CityClass.from_bytes(chunk)
                             if not record.eliminado:
                                 records.append(record)
                             record_id += 1
             return records
-    
-    # Procesar WHERE clause
     cond = parsed["where"]
     col = cond["column"]
     
-    # Para búsquedas espaciales en rtree
     if table_type == "rtree" and col in ["spatial_range", "knn"]:
         if col == "spatial_range":
-            # Esperamos: WHERE spatial_range = {"point": [lon, lat], "radius": km}
             params = cond["value"]
             if isinstance(params, str):
                 params = json.loads(params)
-            return manager.spatial_range_search(params["point"], params["radius"])
-        elif col == "knn":
-            # Esperamos: WHERE knn = {"point": [lon, lat], "k": number}
-            params = cond["value"]
-            if isinstance(params, str):
-                params = json.loads(params)
-            return manager.knn_search(params["point"], params["k"])
+            waza=manager.spatial_range_search(params["point"], params["radius"])
+            cities_only = [city for city, distance in waza]
+            print(cities_only)
+            return cities_only
+        elif col == "knn":            
+            params = cond["value"] 
+        if isinstance(params, str):
+            params = json.loads(params)
+        knn_results = manager.knn_search(params["point"], params["k"])
+        
+        cities_only = [city for city, distance in knn_results]        
+        return cities_only
+        
     
     # Búsquedas por igualdad
     if cond["operator"] == "=":
@@ -180,12 +181,10 @@ def _handle_select(parsed, table):
             search_value = float(cond["value"]) if col == "price" else cond["value"]
             return bplus_tree.search(search_value)
         
-        # Búsqueda directa por clave
         if col in ["id", "key"]:
             result = manager.search(cond["value"])
             return [result] if result else []
         
-        # Búsqueda lineal para otros campos
         if table_type != "rtree":
             all_records = manager._read_all(manager.data_file, manager.aux_file)
         else:  # rtree - obtener todos los registros
@@ -213,7 +212,6 @@ def _handle_select(parsed, table):
             ids = bplus_tree.range_search(from_val, to_val)
             return [record for id in ids if (record := manager.search(id)) is not None]
         
-        # Búsqueda lineal para BETWEEN sin índice
         if table_type != "rtree":
             all_records = manager._read_all(manager.data_file, manager.aux_file)
         else:  # rtree
@@ -228,7 +226,6 @@ def _handle_select(parsed, table):
 
 
 def _get_all_rtree_records(manager):
-    """Función auxiliar para obtener todos los registros de una tabla rtree"""
     records = []
     if hasattr(manager, 'data_file'):
         import os
@@ -269,8 +266,8 @@ def _handle_spatial_query(table, query_type, params):
             }
         
         elif query_type == "knn":
-            point = params["point"]  # [longitude, latitude]
-            k = params["k"]  # número de vecinos
+            point = params["point"]  #
+            k = params["k"]  
             return {
                 "status": 200,
                 "data": manager.knn_search(point, k)
