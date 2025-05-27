@@ -99,10 +99,66 @@ La aplicación consta de dos módulos principales:
 
 ## 💡 Discusión y análisis de los resultados
 
-* **Sequential File**: ....
-* **ISAM**: ....
-* **B+ Tree**: ....
-* **Extendible Hashing**: ....
+* **Sequential File**:
+    Decidimos implementar una estructura de archivo secuencial complementada con un archivo auxiliar. A continuación detallamos nuestro análisis:
+
+    - 📥 **Inserciones eficientes:**  
+      Utilizamos un archivo auxiliar (`aux.bin`) que acumula registros hasta que alcanza un umbral definido (`K`). Esto evita reorganizar constantemente el archivo principal y permite insertar rápidamente nuevos datos.
+
+    - 🔁 **Reorganización por lotes:**  
+      Una vez superado el umbral `K`, se realiza una reorganización, ordenando nuevamente todos los registros activos (no eliminados) y consolidándolos en el archivo principal (`.bin`).
+
+    - 🔍 **Búsqueda y eliminación costosa:**  
+      Para estas operaciones es necesario recorrer completamente ambos archivos, lo que puede impactar el rendimiento a medida que crece el número de registros.
+
+    - ⚖️ **Compensación mediante índices:**  
+      Aunque el acceso secuencial no es ideal para consultas dinámicas, este diseño se ve beneficiado al usarse junto a estructuras como `B+ Tree` o `ISAM`, que reducen el número de accesos requeridos.
+  
+* **ISAM**:
+  Decidimos implementar un índice ISAM de dos niveles con páginas almacenadas en disco. Esta estructura nos permitió mejorar la eficiencia en búsquedas puntuales y por rango. A continuación detallamos los resultados observados:
+
+  - 📄 **Estructura jerárquica en disco:**
+    Dividimos el índice en páginas de hojas con claves ordenadas y punteros de desbordamiento. Esto facilitó una búsqueda eficiente y mantenible en disco.
+
+  - 📥 **Inserciones con encadenamiento:**
+    Al llegar a la capacidad máxima de una página, los nuevos elementos se insertaban en páginas de desbordamiento. Esta decisión nos permitió mantener el orden sin necesidad de reorganización costosa.
+
+  - 🔍 **Búsquedas exactas eficientes:**
+    Utilizando las claves de división (`split_keys`), localizamos rápidamente la página hoja correspondiente y luego escaneamos internamente. Esto resultó más eficiente que la búsqueda secuencial directa.
+
+  - 📈 **Soporte para rangos ordenados:**
+    Implementamos `range_search` recorriendo páginas consecutivas desde el punto de inicio, incluyendo las páginas de desbordamiento. Esto nos permitió usar ISAM también para consultas tipo `BETWEEN`.
+
+  - 💾 **Persistencia total:**
+    Tanto las páginas como los metadatos (`split_keys` y `leaf_offsets`) se serializan con `pickle`, garantizando que el índice pueda restaurarse exactamente como estaba tras reiniciar el sistema.
+* **B+ Tree**:
+    Para mejorar las búsquedas por rango y por clave específica, incorporamos un índice B+ Tree sobre columnas como `price`. Nuestra implementación:
+
+    - **Enlaza las hojas del árbol:**  
+      Esto permitió que la búsqueda por rangos (`BETWEEN`) fuera muy eficiente, ya que bastaba recorrer las hojas adyacentes sin necesidad de volver al nodo raíz.
+
+    - **Almacena directamente los valores (IDs) en las hojas:**  
+      Esto simplificó la recuperación de registros, evitando búsquedas adicionales.
+
+    - **Mayor velocidad en búsquedas específicas:**  
+      En pruebas prácticas, las búsquedas con B+ Tree fueron notablemente más rápidas que con el archivo secuencial, especialmente cuando el árbol estaba bien balanceado.
+* **Extendible Hashing**:
+    Decidimos implementar un índice de tipo Extendible Hashing que guarda los buckets en disco y ajusta dinámicamente su profundidad. Nuestro análisis es el siguiente:
+
+    - **Reorganización automática de buckets:**  
+      Cuando un bucket se llena, este se divide y, si es necesario, se incrementa la profundidad global. Esto permitió mantener baja la tasa de colisiones incluso con grandes volúmenes de datos.
+
+    - **Persistencia con archivos `.dat`:**  
+      Tanto los buckets como el directorio son persistentes gracias al uso de `pickle`, lo que facilita la recuperación del índice incluso después de cerrar el programa.
+
+    - **Búsquedas exactas rápidas:**  
+      La función de hash basada en `md5` y binarización permitió acceder directamente al bucket correspondiente, logrando búsquedas muy rápidas para claves exactas (como IDs).
+
+    - **Soporte para búsquedas por rango:**  
+      Aunque no tan eficiente como un B+ Tree para rangos, implementamos una función de `range_search` que recorre los buckets sin repetirlos y permite recuperar datos en intervalos.
+
+    - **Eliminación sencilla pero no compacta:**  
+      La eliminación borra los elementos del bucket, pero no reorganiza el índice ni compacta los buckets, lo que puede generar fragmentación si se hacen muchas eliminaciones.
 
 ---
 

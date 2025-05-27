@@ -169,16 +169,7 @@ class SequentialFileManager:
                         f.write(v.to_bytes())
                 return True
         return False
-    
-    def get_offset_by_id(self, id):
-        with open(self.data_file, "rb") as f:
-            offset = 0
-            while chunk := f.read(self.record_size):
-                producto = self.ProductoClass.from_bytes(chunk)
-                if not producto.eliminado and producto.id == id:
-                    return offset
-                offset += self.record_size
-        return None
+
 
     def range_search(self, id_inicio, id_fin):
         result = []
