@@ -85,7 +85,9 @@ La aplicación consta de dos módulos principales:
 
 ### 🔍 Comparación para inserción
 
-- Insert
+- **INSERT**
+
+
 | Estructura         | Sin Indice (ms) | B+ Tree (ms) | ISAM (ms) |
 |--------------------|-----------------|--------------|-----------|
 | Sequential File    | 5.23            | 1.562        | 3.15      |
@@ -93,12 +95,14 @@ La aplicación consta de dos módulos principales:
 
 ### 🔍 Comparación para búsqueda
 
-- Range Search
+- **RANGE SEARCH**
+  
 | Estructura         | Sin Indice (ms) | B+ Tree (ms) |
 |--------------------|-----------------|--------------|
 | Sequential File    | 3.23            | 0.98         |
 
-- SEARCH NAME
+- **SEARCH NAME**
+  
 | Estructura         | Sin Indice (ms) | ISAM (ms) |
 |--------------------|-----------------|-----------|
 | Sequential File    | 3.21            | 1.15      |

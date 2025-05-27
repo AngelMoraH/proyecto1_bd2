@@ -421,6 +421,5 @@ def timed_execute_query(parsed):
     result = execute_query(parsed)
     end_time = time.time()
     elapsed = (end_time - start_time) * 1000
-    print(f"Tiempo de ejecución: {elapsed:.3f} ms",{"result": result, "execution_time_seconds": round(elapsed, 3)})
-    
+
     return {"result": result, "execution_time_seconds": round(elapsed, 3)}
