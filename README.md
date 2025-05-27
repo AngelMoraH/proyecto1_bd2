@@ -88,18 +88,18 @@ La aplicación consta de dos módulos principales:
 - **INSERT**
 
 
-| Estructura         | Sin Indice (ms) | B+ Tree (ms) | ISAM (ms) |
-|--------------------|-----------------|--------------|-----------|
-| Sequential File    | 5.23            | 1.562        | 3.15      |
+| Estructura         | Sin Indice (ms) | B+ Tree (ms) | ISAM (ms) | Rtree Index(ms)
+|--------------------|-----------------|--------------|-----------|-----------|
+| Sequential File    | 5.23            | 1.562        | 3.15      |240.34     |
 
 
 ### 🔍 Comparación para búsqueda
 
 - **RANGE SEARCH**
   
-| Estructura         | Sin Indice (ms) | B+ Tree (ms) |
-|--------------------|-----------------|--------------|
-| Sequential File    | 3.23            | 0.98         |
+| Estructura         | Sin Indice (ms) | B+ Tree (ms) |Rtree Index knn(ms) |Rtree Index Radio(ms) |
+|--------------------|-----------------|--------------|--------------------|----------------------|
+| Sequential File    | 3.23            | 0.98         |0.98                |   168                |
 
 - **SEARCH NAME**
   
