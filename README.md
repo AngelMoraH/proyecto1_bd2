@@ -57,6 +57,12 @@ La aplicación consta de dos módulos principales:
 * **Hash dinámico**: Crece de forma flexible mediante directorios y buckets persistentes en `.dat`.
 * **Ventaja**: Acceso casi constante por `id`, con redistribución automática al desbordarse.
 * **Implementación**: [extendible\_hashing.py](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/extendible_hashing.py)
+ 
+### 🔹 Rtree Index
+
+* **Índice Espacial**: Generado por latitud y longitud según la clase City
+* **Ventaja**: Permite encontrar de manera eficaz zonas geográficas en un tiempo óptimo
+* **Implementación**: [extendible\_hashing.py](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/rtree_in.py)
 
 ---
 
@@ -65,7 +71,7 @@ La aplicación consta de dos módulos principales:
 ### 🏗️ Construcción con Lark
 
 * Define la gramática SQL (CREATE, SELECT, INSERT, DELETE, BETWEEN, índices).
-* Genera un árbol de análisis que se traduce a llamadas al **SequentialFileManager**, **BPlusTree**, **ISAM** o **ExtendibleHashing**, según el índice y la cláusula WHERE.
+* Genera un árbol de análisis que se traduce a llamadas al **SequentialFileManager**, **BPlusTree**, **ISAM** , **ExtendibleHashing** o **RtreeIndex**, según el índice y la cláusula WHERE.
 * **Implementación**: [parser\_sql.py](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/parser_sql.py)
 
 ---
