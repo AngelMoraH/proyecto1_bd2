@@ -99,7 +99,7 @@ La aplicación consta de dos módulos principales:
   
 | Estructura         | Sin Indice (ms) | B+ Tree (ms) |Rtree Index knn(ms) |Rtree Index Radio(ms) |
 |--------------------|-----------------|--------------|--------------------|----------------------|
-| Sequential File    | 3.23            | 0.98         |0.98                |   168                |
+| Sequential File    | 3.23            | 0.98         |19.78                |   168.27                |
 
 - **SEARCH NAME**
   
