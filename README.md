@@ -62,7 +62,7 @@ La aplicación consta de dos módulos principales:
 
 * **Índice Espacial**: Generado por latitud y longitud según la clase City
 * **Ventaja**: Permite encontrar de manera eficaz zonas geográficas en un tiempo óptimo
-* **Implementación**: [extendible\_hashing.py](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/rtree_in.py)
+* **Implementación**: [r\_tree.py](https://github.com/AngelMoraH/proyecto1_bd2/blob/main/backend/algoritmos/rtree_in.py)
 
 ---
 
