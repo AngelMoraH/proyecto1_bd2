@@ -1,5 +1,5 @@
 {
-  "table": "productos",
+  "table": "Productos",
   "columns": [
     {
       "name": "id",

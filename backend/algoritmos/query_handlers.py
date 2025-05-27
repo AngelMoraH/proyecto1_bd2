@@ -82,8 +82,12 @@ def _handle_insert(parsed, table):
 
     table_info = global_tables[table]
     manager = table_info["manager"]
-    RecordClass = table_info["class"]  # Usar "class" en lugar de "producto_class"
+    #RecordClass = table_info["class"]  # Usar "class" en lugar de "producto_class"
     table_type = table_info["index"]["type"]
+    if table_type in ['rtree']:
+        RecordClass = table_info["class"]
+    else:
+        RecordClass = table_info["producto_class"]
 
     # Crear el objeto registro
     record = RecordClass(*parsed["values"])
@@ -122,6 +126,7 @@ def _handle_select(parsed, table):
 
     table_info = global_tables[table]
     manager = table_info["manager"]
+    print(f"Table info: {table_info}")
     table_type = table_info["index"]["type"]
 
     # Si no hay WHERE clause, devolver todos los registros
@@ -176,9 +181,10 @@ def _handle_select(parsed, table):
             return bplus_tree.search(search_value)
 
         if table_info.get("index") and table_info["index"]["type"] == "isam":
-            isam: ISAMIndex = table_info["isam"]
+            isam: ISAMIndex = table_info.get("isam")
             index_column = table_info["index"]["column"]
-            if col == index_column:
+            print(f"Index column: {index_column}, col: {col}")
+            if col == index_column and isam:
                 key = cond["value"]
                 offset = isam.search(key)
                 if offset is not None:

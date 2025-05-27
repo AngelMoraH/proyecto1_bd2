@@ -1,3 +1,8 @@
+
+SELECT * FROM productos WHERE name = "Hasbro Little Pony Rainbow Dash Cuddle Pillow, Lar"
+
+CREATE TABLE Productos FROM FILE "/Volumes/externo/proyecto1_bd2/backend/productos_amazon.csv" USING INDEX bplustree(price)
+
 "SELECT * FROM Productos WHERE price BETWEEN 129.00 AND 130.00"
     """ INSERT INTO Productos VALUES (
     "a1234567890abcdef12345678901235",

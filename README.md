@@ -85,23 +85,24 @@ La aplicación consta de dos módulos principales:
 
 ### 🔍 Comparación para inserción
 
-| Estructura         | Accesos a disco | Tiempo promedio (ms) |
-| ------------------ | --------------- | -------------------- |
-| Sequential File    | N₁              | T₁                   |
-| ISAM               | N₂              | T₂                   |
-| B+ Tree            | N₃              | T₃                   |
-| Extendible Hashing | N₄              | T₄                   |
-| Rtree Index        | N5              | T5                   |
+- Insert
+| Estructura         | Sin Indice (ms) | B+ Tree (ms) | ISAM (ms) |
+|--------------------|-----------------|--------------|-----------|
+| Sequential File    | 5.23            | 1.562        | 3.15      |
+
 
 ### 🔍 Comparación para búsqueda
 
-| Estructura         | Accesos a disco | Tiempo promedio (ms) |
-| ------------------ | --------------- | -------------------- |
-| Sequential File    | M₁              | U₁                   |
-| ISAM               | M₂              | U₂                   |
-| B+ Tree            | M₃              | U₃                   |
-| Extendible Hashing | M₄              | U₄                   |
-| Rtree Index        | N5              | T5                   |
+- Range Search
+| Estructura         | Sin Indice (ms) | B+ Tree (ms) |
+|--------------------|-----------------|--------------|
+| Sequential File    | 3.23            | 0.98         |
+
+- SEARCH NAME
+| Estructura         | Sin Indice (ms) | ISAM (ms) |
+|--------------------|-----------------|-----------|
+| Sequential File    | 3.21            | 1.15      |
+
 
 ---
 
@@ -172,4 +173,4 @@ La aplicación consta de dos módulos principales:
 
 ## 🎥 Presentación
 
-* **Video explicativo**: [Ver en Google Drive](https://drive.google.com/drive/folders/1eaTNyh7sq1uyJGuJVUF00FDP35Gt_up3?usp=sharing)
+* **Presentación**: [Ver en Google Drive](https://drive.google.com/drive/folders/1eaTNyh7sq1uyJGuJVUF00FDP35Gt_up3?usp=sharing)
