@@ -91,6 +91,7 @@ La aplicación consta de dos módulos principales:
 | ISAM               | N₂              | T₂                   |
 | B+ Tree            | N₃              | T₃                   |
 | Extendible Hashing | N₄              | T₄                   |
+| Rtree Index        | N5              | T5                   |
 
 ### 🔍 Comparación para búsqueda
 
@@ -100,6 +101,7 @@ La aplicación consta de dos módulos principales:
 | ISAM               | M₂              | U₂                   |
 | B+ Tree            | M₃              | U₃                   |
 | Extendible Hashing | M₄              | U₄                   |
+| Rtree Index        | N5              | T5                   |
 
 ---
 
