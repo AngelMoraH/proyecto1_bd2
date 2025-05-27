@@ -177,7 +177,12 @@ La aplicación consta de dos módulos principales:
   - **Optimización**: El R-tree filtra rápidamente MBRs que no intersectan el círculo, reduciendo accesos a disco.  
  **K-Nearest Neighbors (KNN)**:  
    - Busca los **K puntos más cercanos** a una coordenada dada (ej.: "3 hospitales más cercanos").  
-   - **Algoritmo**: Usa búsqueda heurística por prioridad (ej.: distancia al MBR) para minimizar accesos.  
+   - **Algoritmo**: Usa búsqueda heurística por prioridad (ej.: distancia al MBR) para minimizar accesos.
+   **Escenarios ideales**:  
+  - Aplicaciones de geolocalización (ej.: mapas, logística).  
+  - Consultas con filtros espaciales complejos (intersecciones, áreas poligonales).  
+- **Alternativas**:  
+  - Para datos no espaciales, un **B+ Tree** o **Hashing** puede ser más eficiente. 
 ---
 
 ## 🎥 Presentación
