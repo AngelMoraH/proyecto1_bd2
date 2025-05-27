@@ -8,7 +8,7 @@ import numpy as np
 from typing import List, Tuple, Any, Optional
 from collections import defaultdict
 
-csv_f = "/Users/lvera/OneDrive/Escritorio/proyecto_bd/proyecto1_bd2-main (1)/proyecto1_bd2-main/backend/worldcities.csv"
+csv_f = "/Volumes/externo/proyecto1_bd2/backend/worldcities.csv"
 
 def build_city_class(fields, record_format):
     class City:

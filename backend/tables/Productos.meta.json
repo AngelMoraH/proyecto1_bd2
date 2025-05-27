@@ -1,5 +1,5 @@
 {
-  "table": "Productos",
+  "table": "productos",
   "columns": [
     {
       "name": "id",
@@ -27,8 +27,8 @@
     }
   ],
   "index": {
-    "type": "bplustree",
-    "column": "price"
+    "type": "isam",
+    "column": "name"
   },
   "record_format": "32s100s200sf200s200s?",
   "record_size": 737
