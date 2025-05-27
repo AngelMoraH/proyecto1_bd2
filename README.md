@@ -167,7 +167,17 @@ La aplicación consta de dos módulos principales:
 
     - **Eliminación sencilla pero no compacta:**  
       La eliminación borra los elementos del bucket, pero no reorganiza el índice ni compacta los buckets, lo que puede generar fragmentación si se hacen muchas eliminaciones.
-
+* **Rtree Index**:
+   - **Datos espaciales en disco**:  
+    El R-tree utiliza un archivo `.dat` para almacenar los nodos (hojas y no hojas), donde cada entrada contiene **rectángulos mínimos acotados (MBR)** que agrupan   objetos geográficos.  
+  - **Dos columnas indexadas**: Latitud y Longitud, lo que permite búsquedas basadas en ubicación.  
+  - **Persistencia**: Los nodos se serializan (ej.: con `pickle` o formato binario) para garantizar consistencia tras reinicios.
+  - **Range Query con radio**:  
+    Permite buscar todos los puntos dentro de un **radio circular** alrededor de una coordenada central.  
+  - **Optimización**: El R-tree filtra rápidamente MBRs que no intersectan el círculo, reduciendo accesos a disco.  
+ **K-Nearest Neighbors (KNN)**:  
+   - Busca los **K puntos más cercanos** a una coordenada dada (ej.: "3 hospitales más cercanos").  
+   - **Algoritmo**: Usa búsqueda heurística por prioridad (ej.: distancia al MBR) para minimizar accesos.  
 ---
 
 ## 🎥 Presentación
