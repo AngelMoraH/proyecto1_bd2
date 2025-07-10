@@ -83,6 +83,7 @@ def _handle_insert(parsed, table):
     table_info = global_tables[table]
     manager = table_info["manager"]
     #RecordClass = table_info["class"]  # Usar "class" en lugar de "producto_class"
+    print(f"Table info: {table_info}")
     table_type = table_info["index"]["type"]
     if table_type in ['rtree']:
         RecordClass = table_info["class"]

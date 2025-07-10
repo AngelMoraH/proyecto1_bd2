@@ -153,6 +153,7 @@ class SQLTransformer(Transformer):
                     "record_size": record_size,
                     "bplus_tree": None,
                     "isam": None,
+                    "index": index_info,
                 }
 
                 if index_info["type"] == "isam":
@@ -392,8 +393,10 @@ sql_grammar = pathlib.Path(
 
 def execute_query(parsed):
     action = parsed["action"]
-    print(action)
     table = parsed["table"]
+    print("Ejecutando consulta SQL:")
+    print(action,parsed,table)
+    print("Ejecutando consulta SQL:")
     if table not in global_tables:
         return {
             "status": 400,
