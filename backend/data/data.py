@@ -50,11 +50,12 @@ print(f"Generado data.csv con {len(merged)} filas.")
 
 import pandas as pd
 
+# Leer el CSV existente
 df = pd.read_csv('data.csv')
 
+# Concatenar todas las columnas textuales excepto filename y link
 exclude = {'filename', 'link'}
 text_cols = [c for c in df.columns if c not in ('id', *exclude)]
-
 df['text'] = (
     df[text_cols]
     .fillna('')
@@ -62,10 +63,6 @@ df['text'] = (
     .agg(' '.join, axis=1)
 )
 
-
-out = df[['id', 'text']]
-
-
-out.to_csv('id_text.csv', index=False, encoding='utf-8')
-
-print(f"✅ id_text.csv generado con {len(out)} filas.")
+# Sobrescribir data.csv agregando la columna 'text'
+df.to_csv('data.csv', index=False, encoding='utf-8')
+print(f"✅ data.csv actualizado con campo 'text', total {len(df)} filas.")

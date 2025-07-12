@@ -4,7 +4,7 @@ import os
 import json
 import math
 from collections import defaultdict, Counter
-from preprocess import preprocess_text
+from .preprocess import preprocess_text
 
 class SPIMIIndexer:
     def __init__(self, block_dir='blocks', index_dir='index', block_size=1000):

@@ -4,8 +4,8 @@ import json
 import math
 import csv
 from collections import defaultdict, Counter
-from preprocess import preprocess_text
-from builder import SPIMIIndexer
+from .preprocess import preprocess_text
+from .builder import SPIMIIndexer
 
 class SearchEngine:
     def __init__(self, index_dir='index'):
@@ -68,33 +68,39 @@ class SearchEngine:
         return results[:k]
 
 
-if __name__ == '__main__':
-    # 1) Defino aquí mis documentos de prueba:
+
+def build_search(query,top_k):
+    row_map = {}
     docs = []
-    with open('/Users/angelmora/Desktop/proyecto1_bd2/backend/data/id_text.csv', newline='', encoding='utf-8') as f:
+    with open('/Users/angelmora/Desktop/proyecto1_bd2/backend/data/data.csv', newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             doc_id = int(row['id'])
             text   = row['text']
+            row_map[doc_id] = row.copy()
             docs.append((doc_id, text))
 
     # 2) Sólo indexar la primera vez (o si borraste el índice)
     stats_path = os.path.join('index', 'stats.json')
+
     if not os.path.exists(stats_path):
-        print("🔨 Construyendo índice…")
         indexer = SPIMIIndexer(block_size=500)
         indexer.index_documents(docs)
-        print("✅ Índice construido.\n")
-    else:
-        print("📂 Índice ya existe, saltando indexación.\n")
 
 
     # 3) Crear la instancia de búsqueda y lanzar consultas
     se     = SearchEngine(index_dir='index')
-    query  = "Turtle Check Men Navy Blue Shirt"
-    top_k  = 30
     hits   = se.search(query, k=top_k)
 
     print(f"\nResultados para «{query}» (top {top_k}):")
+    results=[]
     for doc_id, score in hits:
-        print(f"  Documento {doc_id} → Score: {score:.4f}")
+        row = row_map.get(doc_id, {})
+        # Aseguramos copiar para no mutar el row_map original
+        entry = row.copy()
+        entry['score'] = score
+        results.append(entry)
+
+    return {
+        "query":query, "response":results
+    }

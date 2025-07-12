@@ -1,328 +1,267 @@
 import flet as ft
 import time
-import json
-import requests
+import requests  # Para llamar al endpoint de FastAPI
+import random
+
+# --- Funciones de simulación de backend para búsqueda por imagen ---
+def simular_busqueda_imagen(imagen_bytes: bytes) -> list[dict]:
+    """
+    Simula búsqueda de ropa por imagen.
+    """
+    time.sleep(random.uniform(0.5, 1.5))
+    results = []
+    for i in range(9):
+        results.append({
+            "url": f"https://via.placeholder.com/150?text=ImageSearch{i+1}",
+            "similarity": round(random.uniform(70, 99), 2)
+        })
+    return results
 
 
-class SQLQueryApp:
-    def __init__(self):
-        pass
-        # self.data = load_sample_data()
+def main(page: ft.Page):
+    page.theme_mode = ft.ThemeMode.LIGHT
+    page.bgcolor = ft.Colors.BLUE_GREY_50
+    page.title = "Sistema de Búsqueda de Ropa"
+    page.vertical_alignment = ft.CrossAxisAlignment.START
+    page.horizontal_alignment = ft.CrossAxisAlignment.CENTER
+    page.window_width = 1000
+    page.window_height = 700
+    page.window_min_width = 800
+    page.window_min_height = 600
 
-    def main(self, page: ft.Page):
-        # Configuración de la página
-        page.title = "Ejecutor de Consultas SQL"
-        page.theme_mode = ft.ThemeMode.LIGHT
-        page.padding = 20
-        page.window_width = 1000
-        page.window_height = 800
-        page.theme = ft.Theme(
-            color_scheme_seed=ft.Colors.BLUE,
-        )
+    # Etiquetas de tiempo
+    text_search_time_label = ft.Text("Tiempo de ejecución: 0.0 ms", size=12, color=ft.Colors.BLACK87)
+    image_search_time_label = ft.Text("Tiempo de ejecución: 0.0 ms", size=12, color=ft.Colors.BLACK87)
 
-        self.tables_list = ft.ListView(
-            expand=True,
-            spacing=2,
-            padding=10,
-        )
-        
-        def load_tables():
-            try:
-                response = requests.get("http://localhost:8000/tables")
-                if response.status_code == 200:
-                    
-                    tables = response.json()["tables"]
-                    self.tables_list.controls.clear()
-                    
-                    for table in tables:
-                        self.tables_list.controls.append(
-                            ft.Container(
-                                content=ft.Text(table, size=14),
-                                padding=ft.padding.symmetric(vertical=8, horizontal=10),
-                                border_radius=5,
-                                on_click=lambda e, t=table: insert_table_name(t),
-                                ink=True,
-                            )
-                        )
-                else:
-                    # Tablas de ejemplo en caso de error
-                    example_tables = ["productos", "clientes", "ventas", "empleados", "categorias"]
-                    self.tables_list.controls.clear()
-                    
-                    for table in example_tables:
-                        self.tables_list.controls.append(
-                            ft.Container(
-                                content=ft.Text(table, size=14),
-                                padding=ft.padding.symmetric(vertical=8, horizontal=10),
-                                border_radius=5,
-                                on_click=lambda e, t=table: insert_table_name(t),
-                                ink=True,
-                            )
-                        )
-            except Exception as e:
-                # Tablas de ejemplo en caso de error
-                example_tables = ["productos", "clientes", "ventas", "empleados", "categorias"]
-                self.tables_list.controls.clear()
-                
-                for table in example_tables:
-                    self.tables_list.controls.append(
-                        ft.Container(
-                            content=ft.Text(table, size=14),
-                            padding=ft.padding.symmetric(vertical=8, horizontal=10),
-                            border_radius=5,
-                            on_click=lambda e, t=table: insert_table_name(t),
-                            ink=True,
-                        )
-                    )
-            page.update()
+    # Grid de resultados
+    results_grid = ft.GridView(
+        runs_count=3,
+        max_extent=200,
+        child_aspect_ratio=1.0,
+        spacing=10,
+        run_spacing=10,
+        padding=10,
+        expand=True,
+    )
+    results_grid_container = ft.Column(
+        controls=[results_grid],
+        height=450,
+        scroll=ft.ScrollMode.AUTO,
+    )
 
-        # Función para insertar el nombre de la tabla en el campo de consulta
-        def insert_table_name(table_name):
-            current_position = self.query_field.selection.start
-            current_text = self.query_field.value
-            
-            if current_position is not None:
-                # Insertar el nombre de la tabla en la posición actual del cursor
-                new_text = current_text[:current_position] + table_name + current_text[current_position:]
-                self.query_field.value = new_text
-                # Mover el cursor después del nombre de la tabla insertado
-                self.query_field.selection = ft.TextSelection(
-                    start=current_position + len(table_name),
-                    end=current_position + len(table_name)
+    def update_results_grid(results: list[dict], is_image_search: bool):
+        """Actualiza el GridView con los nuevos resultados."""
+        results_grid.controls.clear()
+        for item in results:
+            image_card_content = [
+                ft.Image(
+                    src=item["url"],
+                    fit=ft.ImageFit.COVER,
+                    expand=True,
                 )
-            else:
-                # Si no hay posición del cursor, añadir al final
-                if self.query_field.value:
-                    self.query_field.value += " " + table_name
-                else:
-                    self.query_field.value = table_name
-            
+            ]
+            # Mostrar porcentaje o score
+            label = f"{item['similarity']:.2f}" + ("%" if is_image_search else "")
+            image_card_content.append(
+                ft.Text(label, size=14, weight=ft.FontWeight.BOLD, text_align=ft.TextAlign.CENTER)
+            )
+
+            results_grid.controls.append(
+                ft.Card(
+                    content=ft.Container(
+                        content=ft.Column(
+                            image_card_content,
+                            alignment=ft.MainAxisAlignment.CENTER,
+                            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+                            spacing=5,
+                        ),
+                        padding=5,
+                    ),
+                    elevation=2,
+                )
+            )
+        page.update()
+
+    # --- Sección de búsqueda por texto ---
+    text_input = ft.TextField(
+        hint_text="¿Qué te gustaría comprar?",
+        expand=True,
+        border_radius=8,
+        border_color=ft.Colors.GREY_300,
+        focused_border_color=ft.Colors.BLUE_ACCENT_400,
+    )
+    k_input = ft.TextField(
+        hint_text="Por ejemplo: 5",
+        width=150,
+        keyboard_type=ft.KeyboardType.NUMBER,
+    )
+
+    def on_text_search_click(e):
+        query = text_input.value.strip()
+        if not query:
+            text_search_time_label.value = "Por favor, ingresa texto para buscar."
             page.update()
+            return
 
-        # Área de texto para la consulta SQL
-        self.query_field = ft.TextField(
-            hint_text="Ingresa tu consulta SQL aquí... (Ejemplo: SELECT * FROM productos)",
-            multiline=True,
-            min_lines=5,
-            max_lines=10,
-            expand=True,
-            border_radius=5,
-        )
+        # Obtener k
+        try:
+            top_k = int(k_input.value)
+        except (TypeError, ValueError):
+            top_k = 10
 
-        # Indicador de tiempo de ejecución
-        self.execution_time = ft.Text("", size=14, color=ft.Colors.GREY_700)
+        url = "http://127.0.0.1:8000/search_text"
+        payload = {"query": query, "top_k": top_k}
 
-        # Mensaje de error
-        self.error_message = ft.Text(
-            "", size=14, color=ft.Colors.RED_600, visible=False
-        )
+        try:
+            resp = requests.post(url, json=payload)
+            resp.raise_for_status()
+            data = resp.json()
+            time_response = data.get("execution_time_ms", 0)
+            # Extraer hits de result.response
+            hits = data.get("result", {}).get("response", [])
+            results = []
+            for item in hits:
+                results.append({
+                    "url": item["link"],            # URL de la imagen
+                    "similarity": item.get("score", 0)
+                })
+            text_search_time_label.value = f"Tiempo de ejecución: {time_response:.2f} ms"
+            update_results_grid(results, False)
 
-        # Tabla de resultados
-        self.results_table = ft.DataTable(
-            columns=[
-                ft.DataColumn(ft.Text("")),
+        except Exception as ex:
+            text_search_time_label.value = f"Error en búsqueda: {ex}"
+        page.update()
+
+    text_search_section = ft.Container(
+        content=ft.Column(
+            [
+                ft.Text("Texto", size=20, weight=ft.FontWeight.BOLD),
+                ft.Row([text_input]),
+                ft.ElevatedButton(
+                    text="Buscar",
+                    icon=ft.Icons.SEARCH,
+                    on_click=on_text_search_click,
+                    style=ft.ButtonStyle(
+                        shape=ft.RoundedRectangleBorder(radius=8),
+                        padding=ft.padding.symmetric(horizontal=20, vertical=10),
+                    ),
+                ),
+                text_search_time_label,
             ],
-            border=ft.border.all(1, ft.Colors.GREY_400),
-            border_radius=5,
-            vertical_lines=ft.border.BorderSide(1, ft.Colors.GREY_300),
-            horizontal_lines=ft.border.BorderSide(1, ft.Colors.GREY_300),
-            column_spacing=20,
-        )
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=15,
+        ),
+        padding=20,
+        margin=ft.margin.only(bottom=20),
+        border_radius=10,
+        bgcolor=ft.Colors.WHITE70,
+        shadow=ft.BoxShadow(spread_radius=1, blur_radius=5, color=ft.Colors.BLACK12, offset=ft.Offset(0, 2)),
+    )
 
-        # Contenedor para la tabla de resultados
-        self.results_container = ft.Container(
-            content=ft.Column(
-                controls=[
-                    ft.Row(
-                        controls=[self.results_table],
-                        scroll="auto",  # ← scroll horizontal
-                    )
-                ],
-                scroll="auto",  # ← scroll vertical
-                expand=True,
-            ),
-            expand=True,
-            visible=False,
-            margin=ft.margin.only(top=20),
-            border=ft.border.all(1, ft.Colors.BLACK),
-        )
+    # --- Sección de búsqueda por imagen ---
+    file_picker = ft.FilePicker(on_result=lambda e: on_image_upload_result(e))
+    page.overlay.append(file_picker)
 
-        # Función para ejecutar la consulta
-        def execute_query(e):
-            query = self.query_field.value.strip()
-            if not query:
-                return
+    def on_image_upload_click(e):
+        file_picker.pick_files(allow_multiple=False, allowed_extensions=["jpg", "jpeg", "png", "gif"])
 
-            # Limpiar resultados anteriores
-            self.results_table.rows.clear()
-            self.results_table.columns.clear()
-            self.error_message.visible = False
-
-            # Medir tiempo de ejecución
-            start_time = time.time()
-
+    def on_image_upload_result(e: ft.FilePickerResultEvent):
+        if e.files:
+            selected_file = e.files[0]
             try:
-                # Simulación de resultados basados en la consulta
-                results = []
-                columns = []
-
-                query_lower = query.lower()
-                response = requests.post(
-                    "http://localhost:8000/sql_parser", json={"query": query}
-                )
-                if response.status_code != 200:
-                    raise Exception("Error al consultar la API")
-                print(response.json())
-                results = response.json()["result"]
-                execution_time_ms = response.json()["execution_time_seconds"]
-
-                
-
-                # Calcular tiempo de ejecución
-                end_time = time.time()
-                self.execution_time.value = (
-                    f"Tiempo de ejecución: {execution_time_ms:.2f} ms"
-                )
-                print("results:", results, type(results))
-                if isinstance(results, dict):
-                    message = results.get("message", "Operación realizada.")
-                    print("message:", message)
-                    self.error_message.value = message
-                    self.error_message.color = ft.Colors.GREEN_700
-                    self.error_message.visible = True
-                    self.results_table.columns.clear()
-                    self.results_table.rows.clear()
-                    self.results_table.columns.append(
-                        ft.DataColumn(ft.Text(""))
-                    )
-                    self.results_container.visible = False
-                    page.update()
-                    return
-                
-                if not results:
-                    raise Exception("La consulta no devolvió resultados")
-                
-                columns = list(results[0].keys())
-
-                # Configurar columnas de la tabla
-                self.results_table.columns = [
-                    ft.DataColumn(ft.Text(col, weight=ft.FontWeight.BOLD))
-                    for col in columns
-                ]
-
-                # Configurar filas de la tabla
-                for row in results:
-                    self.results_table.rows.append(
-                        ft.DataRow(
-                            cells=[
-                                ft.DataCell(ft.Text(str(row.get(col, ""))))
-                                for col in columns
-                            ]
-                        )
-                    )
-
-                # Mostrar la tabla de resultados
-                self.results_container.visible = True
-                self.error_message.visible = False
-
-            except Exception as e:
-                # Calcular tiempo de ejecución
+                with open(selected_file.path, "rb") as f:
+                    image_bytes = f.read()
+                start_time = time.time()
+                results = simular_busqueda_imagen(image_bytes)
                 end_time = time.time()
                 execution_time_ms = (end_time - start_time) * 1000
-                self.execution_time.value = (
-                    f"Tiempo de ejecución: {execution_time_ms:.2f} ms"
-                )
+                image_search_time_label.value = f"Tiempo de ejecución: {execution_time_ms:.2f} ms"
+                update_results_grid(results, True)
+            except Exception as ex:
+                image_search_time_label.value = f"Error al leer imagen: {ex}"
+        else:
+            image_search_time_label.value = "No se seleccionó ninguna imagen."
+        page.update()
 
-                # Mostrar mensaje de error
-                self.error_message.value = str(e)
-                self.error_message.visible = True
-                self.results_container.visible = False
-
-            page.update()
-
-        # Botón para ejecutar la consulta
-        execute_button = ft.ElevatedButton(
-            "Ejecutar Consulta",
-            icon=ft.Icons.PLAY_ARROW,
-            on_click=execute_query,
-            style=ft.ButtonStyle(
-                shape=ft.RoundedRectangleBorder(radius=5),
-            ),
-            width=200,
-        )
-
-        # Botón para refrescar la lista de tablas
-        refresh_button = ft.IconButton(
-            icon=ft.Icons.REFRESH,
-            tooltip="Refrescar lista de tablas",
-            on_click=lambda _: load_tables(),
-        )
-
-        # Contenedor para la lista de tablas
-        tables_container = ft.Container(
-            content=ft.Column(
-                [
-                    ft.Row(
-                        [
-                            ft.Text("Tablas Disponibles", weight=ft.FontWeight.BOLD),
-                            refresh_button,
-                        ],
-                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
-                    ),
-                    ft.Divider(),
-                    self.tables_list,
-                ],
-                expand=True,
-            ),
-            width=200,
-            border=ft.border.all(1, ft.Colors.GREY_400),
-            border_radius=5,
-            padding=10,
-            margin=ft.margin.only(right=20),
-        )
-
-        # Contenedor para el área de consulta y resultados
-        query_results_container = ft.Column(
+    image_search_section = ft.Container(
+        content=ft.Column(
             [
-                ft.Text("Ejecutor de Consultas SQL", size=24, weight=ft.FontWeight.BOLD),
-                ft.Container(height=20),
-                ft.Container(
-                    content=self.query_field,
-                    border=ft.border.all(1, ft.Colors.GREY_400),
-                    border_radius=5,
-                    padding=10,
-                ),
-                ft.Container(
+                ft.Text("Imagen", size=20, weight=ft.FontWeight.BOLD),
+                ft.ElevatedButton(
                     content=ft.Row(
                         [
-                            execute_button,
-                            self.execution_time,
+                            ft.Icon(ft.Icons.UPLOAD),
+                            ft.Text("Subir imagen", size=16),
                         ],
-                        alignment=ft.MainAxisAlignment.SPACE_BETWEEN,
+                        spacing=8,
+                        alignment=ft.MainAxisAlignment.CENTER,
                     ),
-                    margin=ft.margin.only(top=10),
+                    on_click=on_image_upload_click,
+                    style=ft.ButtonStyle(
+                        shape=ft.RoundedRectangleBorder(radius=8),
+                        padding=ft.padding.symmetric(horizontal=20, vertical=10),
+                    ),
                 ),
-                self.error_message,
-                self.results_container,
+                image_search_time_label,
             ],
-            expand=True,
-        )
+            horizontal_alignment=ft.CrossAxisAlignment.CENTER,
+            spacing=15,
+        ),
+        padding=20,
+        border_radius=10,
+        bgcolor=ft.Colors.WHITE70,
+        shadow=ft.BoxShadow(spread_radius=1, blur_radius=5, color=ft.Colors.BLACK12, offset=ft.Offset(0, 2)),
+    )
 
-        # Estructura principal con dos columnas
-        page.add(
-            ft.Row(
+    # --- Diseño principal ---
+    page.add(
+        ft.Container(
+            content=ft.Row(
                 [
-                    tables_container,
-                    query_results_container,
+                    ft.Column(
+                        [
+                            text_search_section,
+                            image_search_section,
+                        ],
+                        expand=2,
+                        spacing=20,
+                        scroll=ft.ScrollMode.ADAPTIVE,
+                    ),
+                    ft.VerticalDivider(width=1),
+                    ft.Column(
+                        [
+                            ft.Container(
+                                content=ft.Column(
+                                    [
+                                        ft.Text(
+                                            "Ingresa el número K de productos que deseas encontrar:",
+                                            size=16,
+                                            weight=ft.FontWeight.BOLD,
+                                        ),
+                                        k_input,
+                                    ],
+                                    spacing=5,
+                                    horizontal_alignment=ft.CrossAxisAlignment.START,
+                                ),
+                                margin=ft.margin.only(bottom=10),
+                            ),
+                            results_grid_container,
+                        ],
+                        expand=3,
+                        spacing=10,
+                    ),
                 ],
                 expand=True,
-            )
+                vertical_alignment=ft.CrossAxisAlignment.STRETCH,
+                spacing=20,
+            ),
+            padding=20,
         )
-        
-        # Cargar las tablas al iniciar
-        load_tables()
+    )
+
+    # Inicializar grid vacío
+    update_results_grid([], False)
 
 
-# Iniciar la aplicación
-app = SQLQueryApp()
-ft.app(target=app.main)
+if __name__ == "__main__":
+    ft.app(target=main)
