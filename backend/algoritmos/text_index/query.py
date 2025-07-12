@@ -2,6 +2,7 @@
 import os
 import json
 import math
+import csv
 from collections import defaultdict, Counter
 from preprocess import preprocess_text
 from builder import SPIMIIndexer
@@ -9,79 +10,91 @@ from builder import SPIMIIndexer
 class SearchEngine:
     def __init__(self, index_dir='index'):
         self.index_dir = index_dir
-        self._load_index()
+        # Sólo cargo stats y norms (que suelen ser pequeños)
+        self.stats = json.load(open(os.path.join(index_dir, 'stats.json')))
+        self.N  = self.stats['N']
+        self.df = self.stats['df']
+        norms_raw = json.load(open(os.path.join(index_dir, 'doc_norms.json')))
+        self.norms = {int(d): v for d, v in norms_raw.items()}
 
-    def _load_index(self):
-        # Cargo índices y estadísticas
-        self.index = json.load(open(os.path.join(self.index_dir, 'inverted_index.json')))
-        norms_raw = json.load(open(os.path.join(self.index_dir, 'doc_norms.json')))
-        stats = json.load(open(os.path.join(self.index_dir, 'stats.json')))
-        self.N = stats['N']
-        self.df = stats['df']
-        # Convertir las claves de normas de string a int
-        self.norms = {int(doc_id): norm for doc_id, norm in norms_raw.items()}
-
-    def search(self, query: str, k: int = 10) -> list:
+    def _load_postings(self, term: str) -> dict[int, float]:
         """
-        Procesa la consulta y devuelve top-k [(doc_id, score), ...].
+        Carga y devuelve el posting list TF-IDF de `term` desde disk,
+        o {} si no existe.
         """
+        safe = term.replace("/", "_")
+        path = os.path.join(self.index_dir, 'postings', f"{safe}.json")
+        if not os.path.exists(path):
+            return {}
+        raw = json.load(open(path))
+        # raw viene con claves str, convítelas a int
+        return {int(doc_id): weight for doc_id, weight in raw.items()}
 
-        # 1) Preprocesar la consulta
+    def search(self, query: str, k: int = 10) -> list[tuple[int, float]]:
+        # 1) Preprocesar consulta...
         terms = preprocess_text(query)
-        tf_q = Counter(terms)
+        tf_q  = Counter(terms)
 
-        # 2) Calcular pesos TF-IDF de la consulta
-        q_weights = {}
+        # 2) Calcular pesos de la consulta
+        q_w = {}
         for term, tf in tf_q.items():
-            if term in self.df and self.df[term] > 0:
-                idf = math.log10(self.N / self.df[term])
-                q_weights[term] = (1 + math.log10(tf)) * idf
+            df_t = self.df.get(term, 0)
+            if df_t > 0:
+                idf     = math.log10(self.N / df_t)
+                q_w[term] = (1 + math.log10(tf)) * idf
 
         # 3) Norma de la consulta
-        q_norm_sq = sum(w * w for w in q_weights.values())
-        if q_norm_sq <= 0:
-            return []   # consulta vacía o sin coincidencias en el índice
+        q_norm_sq = sum(v*v for v in q_w.values())
+        if q_norm_sq == 0:
+            return []
         q_norm = math.sqrt(q_norm_sq)
 
-        # 4) Calcular producto escalar consulta·documento
+        # 4) Producto punto leyendo solo postings necesarios
         scores = defaultdict(float)
-        for term, qw in q_weights.items():
-            for doc_id_str, dw in self.index.get(term, {}).items():
-                # en inverted_index.json los doc_id también son strings
-                doc_id = int(doc_id_str)
+        for term, qw in q_w.items():
+            postings = self._load_postings(term)
+            for doc_id, dw in postings.items():
                 scores[doc_id] += qw * dw
 
-        # 5) Normalizar por normas, evitando división por cero
+        # 5) Normalizar con doc_norms.json
         results = []
-        for doc_id, score in scores.items():
+        for doc_id, dot in scores.items():
             doc_norm = self.norms.get(doc_id, 0.0)
             if doc_norm > 0:
-                results.append((doc_id, score / (doc_norm * q_norm)))
-            # si doc_norm == 0, descartamos el documento
+                results.append((doc_id, dot / (doc_norm * q_norm)))
 
-        # 6) Devolver top-k ordenado
+        # 6) Top-k
         results.sort(key=lambda x: x[1], reverse=True)
         return results[:k]
 
 
 if __name__ == '__main__':
     # 1) Defino aquí mis documentos de prueba:
-    docs = [
-        (1, "Este es un texto de prueba para el primer documento."),
-        (2, "Otro ejemplo de documento con texto de prueba."),
-        (3, "Un tercer texto que contiene palabras de prueba y ejemplo.")
-    ]
+    docs = []
+    with open('/Users/angelmora/Desktop/proyecto1_bd2/backend/data/id_text.csv', newline='', encoding='utf-8') as f:
+        reader = csv.DictReader(f)
+        for row in reader:
+            doc_id = int(row['id'])
+            text   = row['text']
+            docs.append((doc_id, text))
 
-    # 2) Indexar esos documentos (sólo la primera vez)
-    indexer = SPIMIIndexer(block_size=2)
-    indexer.index_documents(docs)
-    print("Índice construido ✔️\n")
+    # 2) Sólo indexar la primera vez (o si borraste el índice)
+    stats_path = os.path.join('index', 'stats.json')
+    if not os.path.exists(stats_path):
+        print("🔨 Construyendo índice…")
+        indexer = SPIMIIndexer(block_size=500)
+        indexer.index_documents(docs)
+        print("✅ Índice construido.\n")
+    else:
+        print("📂 Índice ya existe, saltando indexación.\n")
+
 
     # 3) Crear la instancia de búsqueda y lanzar consultas
-    se = SearchEngine()
-    query = "texto de prueba ejemplo"
-    results = se.search(query, k=3)
+    se     = SearchEngine(index_dir='index')
+    query  = "Turtle Check Men Navy Blue Shirt"
+    top_k  = 30
+    hits   = se.search(query, k=top_k)
 
-    print(f"Resultados para la consulta: '{query}'")
-    for doc_id, score in results:
+    print(f"\nResultados para «{query}» (top {top_k}):")
+    for doc_id, score in hits:
         print(f"  Documento {doc_id} → Score: {score:.4f}")

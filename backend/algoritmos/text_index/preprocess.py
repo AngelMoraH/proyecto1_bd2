@@ -8,7 +8,7 @@ from nltk.tokenize import WordPunctTokenizer
 #nltk.download('stopwords')
 
 stemmer = PorterStemmer()
-stop_words = set(stopwords.words('spanish'))  # o 'english' según tu idioma
+stop_words = set(stopwords.words('english'))
 tokenizer = WordPunctTokenizer()
 
 def preprocess_text(text: str) -> list[str]:
