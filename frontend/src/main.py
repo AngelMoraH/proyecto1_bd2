@@ -103,7 +103,6 @@ def main(page: ft.Page):
             page.update()
             return
 
-        # Obtener k
         try:
             top_k = int(k_input.value)
         except (TypeError, ValueError):
@@ -112,17 +111,18 @@ def main(page: ft.Page):
         url = "http://127.0.0.1:8000/search_text"
         payload = {"query": query, "top_k": top_k}
 
+        start_time = time.time()
         try:
             resp = requests.post(url, json=payload)
             resp.raise_for_status()
             data = resp.json()
             time_response = data.get("execution_time_ms", 0)
-            # Extraer hits de result.response
+
             hits = data.get("result", {}).get("response", [])
             results = []
             for item in hits:
                 results.append({
-                    "url": item["link"],            # URL de la imagen
+                    "url": item["link"],
                     "similarity": item.get("score", 0)
                 })
             text_search_time_label.value = f"Tiempo de ejecución: {time_response:.2f} ms"
@@ -131,6 +131,7 @@ def main(page: ft.Page):
         except Exception as ex:
             text_search_time_label.value = f"Error en búsqueda: {ex}"
         page.update()
+
 
     text_search_section = ft.Container(
         content=ft.Column(
