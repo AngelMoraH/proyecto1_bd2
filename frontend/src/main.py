@@ -95,7 +95,14 @@ def main(page: ft.Page):
         width=150,
         keyboard_type=ft.KeyboardType.NUMBER,
     )
-
+    search_method_dropdown = ft.Dropdown(
+        width=200,
+        value="knn",
+        options=[
+            ft.dropdown.Option("knn", "KNN Secuencial"),
+            ft.dropdown.Option("inverted", "Índice Invertido"),
+        ],
+    )
     def on_text_search_click(e):
         query = text_input.value.strip()
         if not query:
@@ -169,17 +176,40 @@ def main(page: ft.Page):
     def on_image_upload_result(e: ft.FilePickerResultEvent):
         if e.files:
             selected_file = e.files[0]
+           
+
+            try:
+                top_k = int(k_input.value) if k_input.value else 10
+            except (TypeError, ValueError):
+                top_k = 10
+
+            method = search_method_dropdown.value
+            endpoint = f"http://127.0.0.1:8000/search_image_{method}"
+            
             try:
                 with open(selected_file.path, "rb") as f:
-                    image_bytes = f.read()
-                start_time = time.time()
-                results = simular_busqueda_imagen(image_bytes)
-                end_time = time.time()
-                execution_time_ms = (end_time - start_time) * 1000
-                image_search_time_label.value = f"Tiempo de ejecución: {execution_time_ms:.2f} ms"
-                update_results_grid(results, True)
+                    files = {"file": (selected_file.name, f, "image/jpeg")}
+                    params = {"top_k": top_k}
+                    start_time = time.time()
+                    response = requests.post(endpoint, files=files, params=params)
+                    response.raise_for_status()
+                    
+                    result_data = response.json()
+                    execution_time_ms = result_data.get("execution_time_ms", 0)
+                    
+                    hits = result_data.get("result", {}).get("response", [])
+                    results = []
+                    for item in hits:
+                        results.append({
+                            "url": item["link"],
+                            "similarity": item.get("similarity", 0) * 100
+                        })
+                    
+                    image_search_time_label.value = f"Tiempo de ejecución: {execution_time_ms:.2f} ms"
+                    update_results_grid(results, True)
+                    
             except Exception as ex:
-                image_search_time_label.value = f"Error al leer imagen: {ex}"
+                image_search_time_label.value = f"Error en búsqueda por imagen: {ex}"
         else:
             image_search_time_label.value = "No se seleccionó ninguna imagen."
         page.update()
@@ -188,6 +218,8 @@ def main(page: ft.Page):
         content=ft.Column(
             [
                 ft.Text("Imagen", size=20, weight=ft.FontWeight.BOLD),
+                ft.Text("Método de búsqueda:", size=14),
+                search_method_dropdown,
                 ft.ElevatedButton(
                     content=ft.Row(
                         [
@@ -214,7 +246,6 @@ def main(page: ft.Page):
         shadow=ft.BoxShadow(spread_radius=1, blur_radius=5, color=ft.Colors.BLACK12, offset=ft.Offset(0, 2)),
     )
 
-    # --- Diseño principal ---
     page.add(
         ft.Container(
             content=ft.Row(
@@ -260,9 +291,7 @@ def main(page: ft.Page):
         )
     )
 
-    # Inicializar grid vacío
     update_results_grid([], False)
-
 
 if __name__ == "__main__":
     ft.app(target=main)
