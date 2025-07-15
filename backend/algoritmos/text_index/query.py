@@ -72,7 +72,7 @@ class SearchEngine:
 def build_search(query,top_k):
     row_map = {}
     docs = []
-    with open('/Users/angelmora/Desktop/proyecto1_bd2/backend/data/data.csv', newline='', encoding='utf-8') as f:
+    with open('/Users/angelmora/Desktop/proyecto1_bd2/backend/data/docs_1000.csv', newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
             doc_id = int(row['id'])
