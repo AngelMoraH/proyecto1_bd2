@@ -72,10 +72,10 @@ class SearchEngine:
 def build_search(query,top_k):
     row_map = {}
     docs = []
-    with open('/Users/angelmora/Desktop/proyecto1_bd2/backend/data/docs_44446.csv', newline='', encoding='utf-8') as f:
+    #C:\Users\lvera\OneDrive\Escritorio\bd_musica\proyecto1_bd2-main (2)\proyecto1_bd2-main\backend\data\data.csv  a modificar si se copío el repositorio
+    with open('/Users/lvera/OneDrive/Escritorio/bd_musica/proyecto1_bd2-main (2)/proyecto1_bd2-main/backend/data/data.csv', newline='', encoding='utf-8') as f:
         reader = csv.DictReader(f)
         for row in reader:
-            
             doc_id = int(row['id'])
             text   = row['text']
             row_map[doc_id] = row.copy()
@@ -85,11 +85,8 @@ def build_search(query,top_k):
     stats_path = os.path.join('index', 'stats.json')
 
     if not os.path.exists(stats_path):
-        print("no existe")
         indexer = SPIMIIndexer(block_size=500)
         indexer.index_documents(docs)
-        
-    print("aa")
 
 
     # 3) Crear la instancia de búsqueda y lanzar consultas
@@ -99,16 +96,11 @@ def build_search(query,top_k):
     print(f"\nResultados para «{query}» (top {top_k}):")
     results=[]
     for doc_id, score in hits:
-        print(doc_id)
         row = row_map.get(doc_id, {})
-        print(row)
         # Aseguramos copiar para no mutar el row_map original
         entry = row.copy()
         entry['score'] = score
         results.append(entry)
-        
-        
-    print("result",results)
 
     return {
         "query":query, "response":results

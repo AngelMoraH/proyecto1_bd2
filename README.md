@@ -25,7 +25,6 @@ La aplicación consta de dos módulos principales:
 
 ## 👥 Integrantes
 
-* **Kevin Abraham Huaman Vega**
 * **Angel Obed Mora Huamanchay**
 * **Lando Fabrizio Veramendi Hilario**
 * **Mishelle Stephany Villarreal Falcón**
@@ -189,6 +188,17 @@ La aplicación consta de dos módulos principales:
 - **Alternativas**:  
   - Para datos no espaciales, un **B+ Tree** o **Hashing** puede ser más eficiente. 
 ---
+# 🚀 PROYECTO 2 – Base de Datos II
+
+## 🎯 Objetivo del proyecto
+
+## Construcción del Índice Invertido Textual (Full-Text Search)
+
+## Indexación de descriptores locales (Multimedia Database)
+
+## Frontend
+
+## Experimentación
 
 ## 🎥 Presentación
 
