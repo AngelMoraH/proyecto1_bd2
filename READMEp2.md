@@ -1,4 +1,11 @@
 # 🚀 PROYECTO 2 – Base de Datos II
+## 👥 Integrantes
+
+* **Angel Obed Mora Huamanchay**
+* **Lando Fabrizio Veramendi Hilario**
+* **Mishelle Stephany Villarreal Falcón**
+
+---
 
 ## 🎯 Objetivo del proyecto
 
