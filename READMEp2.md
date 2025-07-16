@@ -1,3 +1,19 @@
+# 🚀 PROYECTO 2 – Base de Datos II
+
+## 🎯 Objetivo del proyecto
+
+## Construcción del Índice Invertido Textual (Full-Text Search)
+
+## Indexación de descriptores locales (Multimedia Database)
+
+## Frontend
+
+## Experimentación
+
+## 🎥 Presentación
+
+* **Presentación**: [Ver en Google Drive](https://drive.google.com/drive/folders/1eaTNyh7sq1uyJGuJVUF00FDP35Gt_up3?usp=sharing)
+
 # 🔍 Sistema de Búsqueda Visual de Ropa
 
 Un sistema completo de búsqueda por texto e imágenes implementado con técnicas de recuperación de información, incluyendo KNN secuencial, índices invertidos y búsqueda vectorial con PostgreSQL.
