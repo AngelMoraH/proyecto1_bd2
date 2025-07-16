@@ -33,6 +33,17 @@ def main(page: ft.Page):
     text_search_time_label = ft.Text("Tiempo de ejecución: 0.0 ms", size=12, color=ft.Colors.BLACK87)
     image_search_time_label = ft.Text("Tiempo de ejecución: 0.0 ms", size=12, color=ft.Colors.BLACK87)
 
+    # Preview de imagen query
+    query_image_preview = ft.Container(
+        content=ft.Text("No hay imagen", text_align=ft.TextAlign.CENTER, size=12),
+        width=120,
+        height=120,
+        border=ft.border.all(2, ft.Colors.GREY_300),
+        border_radius=8,
+        alignment=ft.alignment.center,
+        bgcolor=ft.Colors.GREY_100,
+    )
+
     # Grid de resultados
     results_grid = ft.GridView(
         runs_count=3,
@@ -176,7 +187,15 @@ def main(page: ft.Page):
     def on_image_upload_result(e: ft.FilePickerResultEvent):
         if e.files:
             selected_file = e.files[0]
-           
+            
+            # Mostrar preview de la imagen
+            query_image_preview.content = ft.Image(
+                src=selected_file.path,
+                fit=ft.ImageFit.COVER,
+                width=120,
+                height=120,
+            )
+            page.update()
 
             try:
                 top_k = int(k_input.value) if k_input.value else 10
@@ -220,21 +239,24 @@ def main(page: ft.Page):
                 ft.Text("Imagen", size=20, weight=ft.FontWeight.BOLD),
                 ft.Text("Método de búsqueda:", size=14),
                 search_method_dropdown,
-                ft.ElevatedButton(
-                    content=ft.Row(
-                        [
-                            ft.Icon(ft.Icons.UPLOAD),
-                            ft.Text("Subir imagen", size=16),
-                        ],
-                        spacing=8,
-                        alignment=ft.MainAxisAlignment.CENTER,
+                ft.Row([
+                    ft.ElevatedButton(
+                        content=ft.Row(
+                            [
+                                ft.Icon(ft.Icons.UPLOAD),
+                                ft.Text("Subir imagen", size=16),
+                            ],
+                            spacing=8,
+                            alignment=ft.MainAxisAlignment.CENTER,
+                        ),
+                        on_click=on_image_upload_click,
+                        style=ft.ButtonStyle(
+                            shape=ft.RoundedRectangleBorder(radius=8),
+                            padding=ft.padding.symmetric(horizontal=20, vertical=10),
+                        ),
                     ),
-                    on_click=on_image_upload_click,
-                    style=ft.ButtonStyle(
-                        shape=ft.RoundedRectangleBorder(radius=8),
-                        padding=ft.padding.symmetric(horizontal=20, vertical=10),
-                    ),
-                ),
+                    query_image_preview,  # Agregar preview aquí
+                ], spacing=10, alignment=ft.MainAxisAlignment.SPACE_BETWEEN),
                 image_search_time_label,
             ],
             horizontal_alignment=ft.CrossAxisAlignment.CENTER,
