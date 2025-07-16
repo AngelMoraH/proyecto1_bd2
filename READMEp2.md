@@ -237,37 +237,4 @@ db_config = {
 }
 ```
 
-## 🤝 Contribuir
 
-1. Fork el proyecto
-2. Crea una rama feature (`git checkout -b feature/AmazingFeature`)
-3. Commit cambios (`git commit -m 'Add some AmazingFeature'`)
-4. Push a la rama (`git push origin feature/AmazingFeature`)
-5. Abre un Pull Request
-
-## 📄 Licencia
-
-Este proyecto está bajo la Licencia MIT - ver el archivo [LICENSE](LICENSE) para más detalles.
-
-## 👥 Autores
-
-- **Tu Nombre** - *Trabajo inicial* - [tu-usuario](https://github.com/tu-usuario)
-
-## 🙏 Agradecimientos
-
-- Dataset de ropa de [Myntra](https://www.myntra.com/)
-- Implementación basada en técnicas de Computer Vision y Information Retrieval
-- Inspirado en el paper "Video Google: A Text Retrieval Approach to Object Matching in Videos"
-
-## 📈 Roadmap
-
-- [ ] 🔊 Búsqueda por audio con MFCC
-- [ ] 🌐 API REST completa con autenticación
-- [ ] 📱 App móvil con React Native
-- [ ] 🤖 Integración con modelos pre-entrenados (ResNet, CLIP)
-- [ ] ☁️ Deployment en AWS/Docker
-- [ ] 📊 Dashboard de analytics con métricas detalladas
-
----
-
-⭐ **¡No olvides dar una estrella si te gusta el proyecto!** ⭐
